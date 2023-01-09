@@ -1,0 +1,49 @@
+---
+title: "SubsetRSE"
+output: html_document
+date: '2022-08-10'
+---
+
+> script to generate subset RSEs from a full RSE based on nuumber of most variable genes to include, whether variation is based on TCGA or GTEx, and whether to exclude purity genes
+
+# Prerequisites: objects with GTEx and TCGA TPM and all RSE objects, which are exported in the DataDownload script, rse_to_subset.R function script
+
+# make objects with varying genes for TCGA and GTEx to use with function
+## computation for this sourced from https://github.com/katharineyu/TCGA_CCLE_paper/blob/master/R_scripts/tumor_cell_line_cor.R
+```{r var genes}
+iqr_gene <- apply(tcga_tpm, 1, IQR, na.rm = TRUE)
+tcga_varying_genes <- iqr_gene[order(iqr_gene, decreasing = T)]
+
+iqr_gene <- apply(gtex_tpm, 1, IQR, na.rm = TRUE)
+gtex_varying_genes <- iqr_gene[order(iqr_gene, decreasing = T)]
+```
+
+# use function in rse_to_subset.R script to create RSE subsets accounting for each variable (RSE source, subset size, in- or excluding tumor purity-correlated genes, basing variant gene rankings on TCGA vs GTEx)
+## this is set up to save each object but not to place in working env
+```{r run function}
+rse <- c(tcga_rse, gtex_rse, ccle_rse, hpa_t_rse, hpa_n_rse, hpa_c_rse, pdx_rse)
+project <- c("tcga", "gtex", "ccle", "hpa_t", "hpa_n", "hpa_c", "pdx")
+subset_num <- c(100, 1000, 5000, 10000)
+var_source <- c("tcgavar", "gtexvar")
+
+for(i in rse){
+  rse_sub <- i
+  
+  for(i in subset_num){
+    subset_sub <- i
+    
+    for(i in var_source){
+      var_sub <- i
+      project_sub <- project[which(rse == rse_sub)]
+      
+      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, TRUE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets") # with purity
+      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, FALSE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets") # without
+    }
+  }
+}
+```
+
+# clean environment
+```{r clean environment}
+rm(iqr_gene, tcga_varying_genes, gtex_varying_genes, rse, project, subset_num, var_source, rse_sub, subset_sub, var_sub, project_sub)
+```

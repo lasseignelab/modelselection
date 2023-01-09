@@ -1,0 +1,23 @@
+---
+title: "DataDownload_Fun"
+author: "Avery Williams"
+date: '2022-08-10'
+output: html_document
+---
+
+> utilizing a function to pull RSEs from Recount3, make adjustments/filters to remove bad data, and save the RSEs as well as raw counts and TPM objects.
+
+# required packages
+```{r load packages}
+library(recount)
+library(recount3)
+library(readr)
+```
+
+# utilize function in rec3_rse_download.R
+## NOTE: prerequisite is cellosaurus problematic cell line list that is available in this directory's /data folder, adjust cellosaurusfilepath and savefilepath accordingly 
+```{r function run, message=FALSE, warning=FALSE}
+for(i in c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c")){
+ rec3_rse_download(project = i, cellosaurusfilepath = "/Users/avery/Desktop/work/R Projects/modelselection/data/problematic_celllines.csv", savefilepath = "/Users/avery/Desktop/work/R Projects/modelselection/data/recount3") # will place full rse (with calc TPM), rawcounts, and tpm objects in destination folder
+}
+```
