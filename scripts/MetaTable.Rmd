@@ -5,6 +5,8 @@ ORDER: TCGA, GTEx, HPA Tissues, CCLE, HPA Cell Lines, PDX, BONE Tumor, BONE "Nor
 # load packages
 ```{r load packages}
 library(stringr)
+
+source("/Users/avery/Desktop/work/R Projects/modelselection/scripts/functions/barebones_cellline.R") # change to where you have this function script saved
 ```
 
 ```{r write out hpa tissues}

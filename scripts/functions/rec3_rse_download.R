@@ -63,7 +63,9 @@ rec3_rse_download <- function(project = c("tcga", "gtex", "ccle", "hpa_c", "hpa_
   }
   
   if(proj_home == "data_sources/sra"){
-    rse <- expand_sra_attributes(rse)
+    if(project != "hpa_c"){
+      rse <- expand_sra_attributes(rse)
+    }
   }
   
   # quick fix of HPA metadata mislabeling
@@ -109,9 +111,9 @@ rec3_rse_download <- function(project = c("tcga", "gtex", "ccle", "hpa_c", "hpa_
   assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
   
   # now, save RSE as object
-  saveRDS(rse, paste(savefilepath, project, "_rse.rds", sep = ""))
+  saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
   
   # also save raw counts and TPM individually
-  saveRDS(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, project, "_rawcounts.rds", sep = ""))
-  saveRDS(rse@assays@data@listData[["TPM"]], paste(savefilepath, project, "_tpm.rds", sep = ""))
+  saveRDS(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
+  saveRDS(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
 }
