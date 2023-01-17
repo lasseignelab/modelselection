@@ -1,0 +1,555 @@
+# incorporating GTEx tissue-specific genes (https://maayanlab.cloud/Harmonizome/dataset/GTEx+Tissue+Gene+Expression+Profiles)
+
+# requires qusage package for reading in GMTs
+```{r read in up and down genes for each tissue}
+gtex_up_tissue_genes <- qusage::read.gmt("/Users/avery/Desktop/work/R Projects/modelselection/data/gene_set_library_up_crisp.gmt")
+gtex_down_tissue_genes <- qusage::read.gmt("/Users/avery/Desktop/work/R Projects/modelselection/data/gene_set_library_dn_crisp.gmt")
+```
+
+## I need ens IDs for these genes
+```{r adding ens IDs}
+library(AnnotationDbi)
+library(org.Hs.eg.db)
+
+for(i in names(gtex_up_tissue_genes)){
+  out <- data.frame(genesym = gtex_up_tissue_genes[[paste(i)]])
+  out$ens <- mapIds(org.Hs.eg.db, keys = out$genesym, column = "ENSEMBL", keytype = "SYMBOL", multiVals = "first")
+ gtex_up_tissue_genes[[paste(i)]] <- na.omit(out$ens) 
+}
+
+for(i in names(gtex_down_tissue_genes)){
+  out <- data.frame(genesym = gtex_down_tissue_genes[[paste(i)]])
+  out$ens <- mapIds(org.Hs.eg.db, keys = out$genesym, column = "ENSEMBL", keytype = "SYMBOL", multiVals = "first")
+ gtex_down_tissue_genes[[paste(i)]] <- na.omit(out$ens) 
+}
+
+# also would like to have one list with both up and down
+gtex_both_tissue_genes <- list()
+for(i in names(gtex_up_tissue_genes)){ # up and down have the same name set
+  gtex_both_tissue_genes[[paste(i)]] <- c(gtex_up_tissue_genes[[paste(i)]], gtex_down_tissue_genes[[paste(i)]])
+}
+
+# clear env
+rm(out, i)
+rm(gtex_down_tissue_genes, gtex_up_tissue_genes) # optional
+```
+
+# next, subset this nested list to only the cell line tissue origins represented
+```{r list subset}
+cellline_tissues <- unique(sample_master_meta[sample_master_meta$origin == "Cell Line",]$tissue_coerced)
+gtex_tissues_cap <- stringr::str_to_title(names(gtex_both_tissue_genes))
+
+# what tissues are in common
+#View(data.frame(intersect(cellline_tissues, gtex_tissues_cap))) # 20 in common so far
+#View(data.frame(setdiff(cellline_tissues, gtex_tissues_cap))) # Head And Neck, Pleura, Bone, Soft Tissue, Biliary System in cl but not gtex
+#View(data.frame(setdiff(gtex_tissues_cap, cellline_tissues))) # Heart, Muscle, Adipose, Blood Vessel, Fallopian, Vagina, Pituitary, Adrenal, Spleen in gtex but not cl
+
+# making list of tissues to exclude from gtex
+gtex_tissues_exc <- stringr::str_to_lower(setdiff(gtex_tissues_cap, cellline_tissues)) 
+
+# remove these from my list
+for(i in gtex_tissues_exc){
+  gtex_both_tissue_genes[[paste(i)]] <- NULL
+}
+
+# optional check
+gtex_tissues_fin <- "x"
+for(i in 1:length(gtex_both_tissue_genes)){
+  gtex_tissues_fin <- c(gtex_tissues_fin, names(gtex_both_tissue_genes[i]))
+}
+gtex_tissues_fin <- gtex_tissues_fin[-1]
+#View(data.frame(intersect(cellline_tissues, stringr::str_to_title(gtex_tissues_fin)))) # all but intestine
+
+# remove objects
+rm(gtex_tissues_cap, gtex_tissues_exc, cellline_tissues, i)
+```
+
+# now, use function to correlate x by y with method including gene set
+```{r tissue gene set cor fun}
+source("/Users/avery/Desktop/work/R Projects/modelselection/scripts/functions/tisgenesetcor.R")
+```
+
+# make tpm objs to run fun
+## pull in tpm matrices
+```{r pull tpm}
+tpm_to_pull <- c("gtex", "tcga", "ccle", "bone_t", "hpa_t", "pdx", "hpa_c", "bone_c", "bone_n")
+
+for(i in tpm_to_pull){
+  assign(paste(i, "_tpm", sep = ""), readRDS(paste("~/Desktop/work/R Projects/modelselection/data/recount3/tpm/", i, "_tpm.rds", sep = "")))
+}
+
+rm(tpm_to_pull, i)
+```
+
+## put together
+```{r bind tpm matrices}
+# match order with meta table:
+## PM: CCLE, gtex Cell Lines, PDX, BONE CL
+# T: TCGA, GTEx, gtex Tissues, BONE Tumor, BONE Normal
+
+cl_tpm <- cbind(ccle_tpm, hpa_c_tpm, bone_c_tpm) # NOTE: JUST including cell lines
+
+# need to subset cl_tpm to only samples with tissues represented in GTEx
+cl_tpm <- cl_tpm[,colnames(cl_tpm) %in% sample_master_meta[sample_master_meta$tissue_coerced %in% stringr::str_to_title(gtex_tissues_fin),]$rse_sampname]
+
+con_tissue_tpm <- cbind(gtex_tpm, hpa_t_tpm, bone_n_tpm)
+tum_tissue_tpm <- cbind(tcga_tpm, bone_t_tpm)
+```
+
+# run function
+```{r run fun}
+corbytis_tum_res <- list()
+for(i in gtex_tissues_fin){
+  corbytis_tum_res[[paste(i)]] <- tisgenesetcor(cl_tpm, tum_tissue_tpm, tissue = i)
+}
+
+corbytis_con_res <- list()
+for(i in gtex_tissues_fin){
+  corbytis_con_res[[paste(i)]] <- tisgenesetcor(cl_tpm, con_tissue_tpm, tissue = i)
+}
+
+rm(i)
+```
+
+# visualize as violin plot
+## first, need to make the data length-wise
+```{r prep data for violin plot}
+tum_corres <- 1
+for(i in gtex_tissues_fin){
+  tum_corres <- c(tum_corres, corbytis_tum_res[[paste(i)]]$cor)
+}
+tum_corres <- tum_corres[-1]
+
+con_corres <- 1
+for(i in gtex_tissues_fin){
+  con_corres <- c(con_corres, corbytis_con_res[[paste(i)]]$cor)
+}
+con_corres <- con_corres[-1]
+
+tissuerep <- "x"
+for(i in gtex_tissues_fin){
+  tissuerep <- c(tissuerep, rep(i, length(corbytis_tum_res[[paste(i)]]$cor))) # tissue will be the same for tum/con so don't need split
+}
+tissuerep <- tissuerep[-1]
+
+tis_gene_cor_tum_vio_in <- data.frame(corres = tum_corres, tissue = stringr::str_to_title(tissuerep))
+# since salivary gland is blank, let's just remove
+tis_gene_cor_tum_vio_in <- tis_gene_cor_tum_vio_in[tis_gene_cor_tum_vio_in$tissue != "Salivary Gland",]
+tis_gene_cor_tum_vio_in <- tis_gene_cor_tum_vio_in[tis_gene_cor_tum_vio_in$tissue != "Small Intestine",]
+tis_gene_cor_tum_vio_in <- tis_gene_cor_tum_vio_in[tis_gene_cor_tum_vio_in$tissue != "Nerve",] # same for nerve
+
+tis_gene_cor_con_vio_in <- data.frame(corres = con_corres, tissue = stringr::str_to_title(tissuerep))
+#tis_gene_cor_con_vio_in <- tis_gene_cor_con_vio_in[tis_gene_cor_con_vio_in$tissue != "Salivary Gland",]
+tis_gene_cor_con_vio_in <- tis_gene_cor_con_vio_in[tis_gene_cor_con_vio_in$tissue != "Small Intestine",]
+```
+
+## next, generate plots
+```{r generate violin plot}
+library(ggplot2)
+ggplot(tis_gene_cor_tum_vio_in, aes(x=tissue, y=corres, color=tissue)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Tumor Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Tumor Tissue") + ylim(0.4,0.9)
+ggsave(filename = "~/Desktop/work/R Projects/modelselection/plots/tags_violin/allcltomatchtum.png", 
+          width = 13, height = 7, units = "in")
+
+ggplot(tis_gene_cor_con_vio_in, aes(x=tissue, y=corres, color=tissue)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Control Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Control Tissue") + ylim(0.4,0.9)
+ggsave(filename = "~/Desktop/work/R Projects/modelselection/plots/tags_violin/allcltomatchcon.png", 
+          width = 13, height = 7, units = "in")
+```
+
+# split violin
+## geom_split_violin fun
+```{r}
+source("/Users/avery/Desktop/work/R Projects/modelselection/scripts/functions/geom_split_violin.R")
+```
+
+# plot split
+```{r}
+# make combined obj with tum and con
+tis_gene_cor_both_vio_in <- rbind(tis_gene_cor_tum_vio_in, tis_gene_cor_con_vio_in)
+tis_gene_cor_both_vio_in$Type <- c(rep("Tumor", length(tis_gene_cor_tum_vio_in$corres)), rep("Control", length(tis_gene_cor_con_vio_in$corres)))
+tis_gene_cor_both_vio_in <- tis_gene_cor_both_vio_in[tis_gene_cor_both_vio_in$tissue != "Nerve",]
+tis_gene_cor_both_vio_in <- tis_gene_cor_both_vio_in[tis_gene_cor_both_vio_in$tissue != "Salivary Gland",]
+
+ggplot(tis_gene_cor_both_vio_in, aes(tissue, corres, fill = Type)) + geom_split_violin(width = 1) + labs(x = "Tissue of Origin", y = "Median Correlation Between Matched Cell Lines and Tissues") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_manual(values = c("darkblue", "orange")) + labs(fill = "Tissue Type")
+ggsave(filename = "~/Desktop/work/R Projects/modelselection/plots/tags_violin/allcltomatchboth.png", 
+          width = 13, height = 7, units = "in")
+```
+
+## next, let's make a plot for each tissue
+### how did each cell line recapitulate another tissue?
+```{r}
+corbytis_tum_allcl_res <- list()
+for(i in gtex_tissues_fin){
+  corbytis_tum_allcl_res[[paste(i)]] <- tisgenesetcor(cl_tpm, tum_tissue_tpm, tissue = i, onlymatch = FALSE)
+}
+
+corbytis_con_allcl_res <- list()
+for(i in gtex_tissues_fin){
+  corbytis_con_allcl_res[[paste(i)]] <- tisgenesetcor(cl_tpm, con_tissue_tpm, tissue = i, onlymatch = FALSE)
+}
+```
+
+## now, make new objects that split each nested list by cell line origin tissue (nested 1 = tissue/TAGs of comparison, nested 2 = model tissue of origin)
+```{r}
+for(i in 1:length(corbytis_tum_allcl_res)){
+  tissue <- gtex_tissues_fin[i]
+  temp <- corbytis_tum_allcl_res[[paste(tissue)]]
+  samples <- rownames(temp)
+  cl_split <- list()
+  master_sub <- sample_master_meta[sample_master_meta$rse_sampname %in% samples,]
+  for(i in gtex_tissues_fin){
+    if(i != "intestine"){
+      samples_sub <- master_sub[master_sub$tissue_coerced == stringr::str_to_title(i),]$rse_sampname
+    } else if(i == "intestine"){
+      samples_sub <- c(master_sub[master_sub$tissue_coerced == "Colon",]$rse_sampname, master_sub[master_sub$tissue_coerced == "Small Intestine",]$rse_sampname)
+    }
+    cl_split[[paste(i)]] <- temp[rownames(temp) %in% samples_sub,]
+  }
+  corbytis_tum_allcl_res[[paste(tissue)]] <- cl_split
+  rm(temp,tissue,samples,cl_split,master_sub,samples_sub)
+}
+
+for(i in 1:length(corbytis_con_allcl_res)){
+  tissue <- gtex_tissues_fin[i]
+  temp <- corbytis_con_allcl_res[[paste(tissue)]]
+  samples <- rownames(temp)
+  cl_split <- list()
+  master_sub <- sample_master_meta[sample_master_meta$rse_sampname %in% samples,]
+  for(i in gtex_tissues_fin){
+    if(i != "intestine"){
+      samples_sub <- master_sub[master_sub$tissue_coerced == stringr::str_to_title(i),]$rse_sampname
+    } else if(i == "intestine"){
+      samples_sub <- c(master_sub[master_sub$tissue_coerced == "Colon",]$rse_sampname, master_sub[master_sub$tissue_coerced == "Small Intestine",]$rse_sampname)
+    }
+    cl_split[[paste(i)]] <- temp[rownames(temp) %in% samples_sub,]
+  }
+  corbytis_con_allcl_res[[paste(tissue)]] <- cl_split
+  rm(temp,tissue,samples,cl_split,master_sub,samples_sub)
+}
+```
+
+## make objects for violin plot
+```{r}
+allcl_totistags_vio_in <- list()
+for(i in gtex_tissues_fin){
+  tum_allcl_corres <- 1
+  tissue <- i
+  for(i in gtex_tissues_fin){
+    tum_allcl_corres <- c(tum_allcl_corres, corbytis_tum_allcl_res[[paste(tissue)]][[paste(i)]])
+  }
+  tum_allcl_corres <- tum_allcl_corres[-1]
+  
+  con_allcl_corres <- 1
+  for(i in gtex_tissues_fin){
+    con_allcl_corres <- c(con_allcl_corres, corbytis_con_allcl_res[[paste(tissue)]][[paste(i)]])
+  }
+  con_allcl_corres <- con_allcl_corres[-1]
+  
+  tissue_allcl_rep <- "x"
+  for(i in gtex_tissues_fin){
+    tissue_allcl_rep <- c(tissue_allcl_rep, rep(i, length(corbytis_tum_allcl_res[[paste(tissue)]][[paste(i)]]))) # tissue will be the same for tum/con so don't need split
+  }
+  tissue_allcl_rep <- tissue_allcl_rep[-1]
+  
+  allcl_totistags_vio_in[[paste(tissue)]][["tum"]] <- data.frame(corres = tum_allcl_corres, tissue = tissue_allcl_rep)
+  allcl_totistags_vio_in[[paste(tissue)]][["con"]] <- data.frame(corres = con_allcl_corres, tissue = tissue_allcl_rep)
+  
+  # clean env
+  rm(tum_allcl_corres, tissue, con_allcl_corres, tissue_allcl_rep)
+}
+```
+
+## make and export a buncha violin plots
+```{r}
+library(ggplot2)
+violin_outputs <- list()
+for(i in c("tum", "con")){
+  type <- i
+  for(i in gtex_tissues_fin){
+    if(type == "tum"){
+      ggplot(allcl_totistags_vio_in[[paste(i)]][[paste(type)]], aes(x=tissue, y=corres, color=tissue)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + ggtitle(paste("Median Correlation of Cell Lines of Each Tissue Type to ", stringr::str_to_title(i), " Tumor Tissue by ", stringr::str_to_title(i), " TAGs", sep = ""))
+      ggsave(filename = paste("~/Desktop/work/R Projects/modelselection/plots/tags_violin/", i, "tum.png", sep = ""), 
+          width = 15, height = 7, units = "in")
+    } else if(type == "con"){
+      ggplot(allcl_totistags_vio_in[[paste(i)]][[paste(type)]], aes(x=tissue, y=corres, color=tissue)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + ggtitle(paste("Median Correlation of Cell Lines of Each Tissue Type to ", stringr::str_to_title(i), " Control Tissue by ", stringr::str_to_title(i), " TAGs", sep = ""))
+      ggsave(filename = paste("~/Desktop/work/R Projects/modelselection/plots/tags_violin/", i, "con.png", sep = ""), 
+          width = 15, height = 7, units = "in")
+    }
+  }
+}
+```
+
+# add PDX vs brain cl performance
+## first, how they compare in brain tissue
+```{r}
+# make TPM obj for just brain CLs
+brain_cl_tpm <- cl_tpm[,colnames(cl_tpm) %in% sample_master_meta[sample_master_meta$tissue_coerced == "Brain",]$rse_sampname]
+
+# run function
+# computes performance of brain cls vs brain pdxs in correlating to brain tissue in brain TAGs
+corbytis_pdxcl_tum_res <- tisgenesetcor(cbind(brain_cl_tpm, pdx_tpm), tum_tissue_tpm, tissue = "brain")
+
+corbytis_pdxcl_con_res <- tisgenesetcor(cbind(brain_cl_tpm, pdx_tpm), con_tissue_tpm, tissue = "brain")
+```
+
+### visualize as violin plot
+#### first, need to make the data length-wise
+```{r prep data for violin plot}
+originrep <- c(rep("CL", ncol(brain_cl_tpm)), rep("PDX", ncol(pdx_tpm)))
+
+tis_gene_cor_pdxcl_tum_vio_in <- data.frame(corres = corbytis_pdxcl_tum_res$cor, type = originrep)
+tis_gene_cor_pdxcl_tum_vio_in$type[tis_gene_cor_pdxcl_tum_vio_in$type == "CL"] <- "Cell Line"
+
+tis_gene_cor_pdxcl_con_vio_in <- data.frame(corres = corbytis_pdxcl_con_res$cor, type = originrep)
+tis_gene_cor_pdxcl_con_vio_in$type[tis_gene_cor_pdxcl_con_vio_in$type == "CL"] <- "Cell Line"
+```
+
+#### next, generate plots
+```{r generate violin plot}
+library(ggplot2)
+tis_gene_cor_pdxcl_tum_v_plot <- ggplot(tis_gene_cor_pdxcl_tum_vio_in, aes(x=type, y=corres, color=type)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Brain Model to Brain Tumor Tissue in Brain TAGs") + ylim(0.5,0.9) + guides(color = "none")
+
+tis_gene_cor_pdxcl_con_v_plot <- ggplot(tis_gene_cor_pdxcl_con_vio_in, aes(x=type, y=corres, color=type)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Brain Model to Brain Control Tissue in Brain TAGs") + ylim(0.5,0.9) + guides(color = "none")
+```
+
+#### Wilcoxon rank sum test on these two groups
+```{r}
+# Question : Is there any significant difference between pdx and cell line median correlation to matched tissue when only considering TAGs?
+library(tidyverse)
+library(rstatix)
+library(ggpubr)
+
+# make input object
+tis_gene_cor_pdxcl_stat <- data.frame(tum_med_cor = tis_gene_cor_pdxcl_tum_vio_in$corres, con_med_cor = tis_gene_cor_pdxcl_con_vio_in$corres, type = tis_gene_cor_pdxcl_tum_vio_in$type)
+
+# computation - tumor
+stat.test_tag <- tis_gene_cor_pdxcl_stat %>% 
+  rstatix::wilcox_test(tum_med_cor ~ type) %>%
+  add_significance()
+stat.test_tag
+
+# effect size
+library(coin)
+tis_gene_cor_pdxcl_stat %>% wilcox_effsize(tum_med_cor ~ type)
+
+# report
+library(ggpubr)
+stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
+tis_gene_cor_pdxcl_tum_v_plot + 
+  stat_pvalue_manual(stat.test_tag, tip.length = 0) +
+  labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
+ggsave(filename = "~/Desktop/work/R Projects/modelselection/plots/tags_violin/brainclpdxtomatchtum.png", 
+          width = 5, height = 6)
+
+# computation - control
+stat.test_tag <- tis_gene_cor_pdxcl_stat %>% 
+  rstatix::wilcox_test(con_med_cor ~ type) %>%
+  add_significance()
+stat.test_tag
+
+# effect size
+library(coin)
+tis_gene_cor_pdxcl_stat %>% wilcox_effsize(con_med_cor ~ type)
+
+# report
+library(ggpubr)
+stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
+tis_gene_cor_pdxcl_con_v_plot + 
+  stat_pvalue_manual(stat.test_tag, tip.length = 0) +
+  labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
+ggsave(filename = "~/Desktop/work/R Projects/modelselection/plots/tags_violin/brainclpdxtomatchcon.png", 
+          width = 5, height = 6)
+```
+
+## next, how they compare in recapitulating expression across tissue TAGs
+### first, correlation of each across each tissue
+```{r}
+corbytis_pdxcl_alltum_res <- list()
+corbytis_pdxcl_allcon_res <- list()
+
+for(i in c("tum", "con")){
+  type <- i
+  
+  for(i in c("cl", "pdx")){
+    model <- i
+    
+    if(i == "cl"){
+      x <- brain_cl_tpm
+    }else if(i == "pdx"){
+      x <- pdx_tpm
+    }
+    
+    for(i in gtex_tissues_fin){
+      tissue <- i
+      if(type == "tum"){
+        corbytis_pdxcl_alltum_res[[paste(tissue)]][[paste(model)]] <- tisgenesetcor(x, tum_tissue_tpm, tissue = tissue, onlymatch = FALSE)
+      } else if(type == "con"){
+        corbytis_pdxcl_allcon_res[[paste(tissue)]][[paste(model)]] <- tisgenesetcor(x, con_tissue_tpm, tissue = tissue, onlymatch = FALSE)
+      }
+    }
+  }
+}
+```
+
+### next, build data frames for inputs to ggplot
+```{r}
+tis_gene_cor_pdxcl_allcon_vio_in <- data.frame(cor = 1, type = "x", tissue = "x")
+tis_gene_cor_pdxcl_alltum_vio_in <- data.frame(cor = 1, type = "x", tissue = "x")
+for(i in c("tum", "con")){
+  tis <- i
+  
+  for(i in gtex_tissues_fin){
+    tissue <- i
+    if(tis == "tum"){
+      sub <- corbytis_pdxcl_alltum_res[[paste(tissue)]]
+    } else if(tis == "con"){
+      sub <- corbytis_pdxcl_allcon_res[[paste(tissue)]]
+    }
+    
+    cor <- c(sub[["cl"]]$cor, sub[["pdx"]]$cor)
+    type <- c(rep("Cell Line", length(sub[["cl"]]$cor)), rep("PDX", length(sub[["pdx"]]$cor)))
+    tissue <- rep(paste(tissue), length(cor))
+    
+    if(tis == "tum"){
+      tis_gene_cor_pdxcl_alltum_vio_in <- rbind(tis_gene_cor_pdxcl_alltum_vio_in, data.frame(cor = cor, type = type, tissue = stringr::str_to_title(tissue)))
+    } else if(tis == "con"){
+      tis_gene_cor_pdxcl_allcon_vio_in <- rbind(tis_gene_cor_pdxcl_allcon_vio_in, data.frame(cor = cor, type = type, tissue = stringr::str_to_title(tissue)))
+    }
+  }
+}
+tis_gene_cor_pdxcl_allcon_vio_in <- tis_gene_cor_pdxcl_allcon_vio_in[-1,]
+tis_gene_cor_pdxcl_alltum_vio_in <- tis_gene_cor_pdxcl_alltum_vio_in[-1,]
+
+# also remove salivary gland from tumor
+tis_gene_cor_pdxcl_alltum_vio_in <- tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_cor_pdxcl_alltum_vio_in$tissue != "Salivary Gland",]
+tis_gene_cor_pdxcl_alltum_vio_in <- tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_cor_pdxcl_alltum_vio_in$tissue != "Nerve",]
+tis_gene_cor_pdxcl_alltum_vio_in <- tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_cor_pdxcl_alltum_vio_in$tissue != "Small Intestine",]
+```
+
+### make plots
+
+#### run fun to make objects
+```{r}
+library(ggplot2)
+ggplot(tis_gene_cor_pdxcl_alltum_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain Model to Each Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model")
+ggsave(filename = "~/Desktop/work/R Projects/modelselection/plots/tags_violin/brainclpdxtoalltum.png", 
+          width = 5000, height = 2000, units = "px")
+
+ggplot(tis_gene_cor_pdxcl_allcon_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of Each Brain Model to Each Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model")
+ggsave(filename = "~/Desktop/work/R Projects/modelselection/plots/tags_violin/brainclpdxtoallcon.png", 
+          width = 13, height = 7)
+```
+
+# make heatmap to summarize all cls compared to each tissue/TAG
+```{r}
+corbytis_tum_allcl_df <- tisgenesetcor(cl_tpm, tum_tissue_tpm, tissue = gtex_tissues_fin[1], onlymatch = FALSE)
+for(i in gtex_tissues_fin[-1]){
+  corbytis_tum_allcl_df <- cbind(corbytis_tum_allcl_df, tisgenesetcor(cl_tpm, tum_tissue_tpm, tissue = i, onlymatch = FALSE))
+}
+colnames(corbytis_tum_allcl_df) <- gtex_tissues_fin
+corbytis_tum_allcl_df$`salivary gland` <- NULL # no salivary gland tumor samples
+corbytis_tum_allcl_df$`small intestine` <- NULL # same reason
+corbytis_tum_allcl_df$`nerve` <- NULL # same reason
+
+corbytis_con_allcl_df <- tisgenesetcor(cl_tpm, con_tissue_tpm, tissue = gtex_tissues_fin[1], onlymatch = FALSE)
+for(i in gtex_tissues_fin[-1]){
+  corbytis_con_allcl_df <- cbind(corbytis_con_allcl_df, tisgenesetcor(cl_tpm, con_tissue_tpm, tissue = i, onlymatch = FALSE))
+}
+colnames(corbytis_con_allcl_df) <- gtex_tissues_fin
+```
+
+## make lil reference table for which cell lines came from what tissue/what their common name is
+```{r}
+master_sub <- sample_master_meta[sample_master_meta$rse_sampname %in% rownames(corbytis_tum_allcl_df),]
+master_sub <- data.frame(SRA = master_sub$rse_sampname, tissue = master_sub$tissue_coerced, common_name = substr(master_sub$sample_name, 6, nchar(master_sub$sample_name)), lowercase_name = master_sub$cell_line)
+# probably won't show their names necessarily but to reference
+# did double check that cell lines are in same order as cor dfs
+```
+
+## generate heatmap
+```{r}
+library(pheatmap)
+
+anno_col <- data.frame(master_sub$tissue)
+rownames(anno_col) <- master_sub$SRA
+colnames(anno_col) <- "Model Origin Tissue"
+
+pheatmap(t(corbytis_tum_allcl_df), annotation_col = anno_col, show_colnames = FALSE, main = "Cell Line Median Correlation to Tumor Tissue by TAGs")
+
+pheatmap(t(corbytis_con_allcl_df), annotation_col = anno_col, show_colnames = FALSE, main = "Cell Line Median Correlation to Control Tissue by TAGs")
+```
+
+## heatmap with top 100 cell lines
+```{r}
+# which cell lines have the highest median?
+tum_top100cl <- data.frame(medcor = MatrixGenerics::rowMedians(as.matrix(corbytis_tum_allcl_df)), sra = rownames(corbytis_tum_allcl_df))
+tum_top100cl <- tum_top100cl[order(tum_top100cl$medcor, decreasing = TRUE),][1:100,]$sra
+
+con_top100cl <- data.frame(medcor = MatrixGenerics::rowMedians(as.matrix(corbytis_con_allcl_df)), sra = rownames(corbytis_con_allcl_df))
+con_top100cl <- con_top100cl[order(con_top100cl$medcor, decreasing = TRUE),][1:100,]$sra
+
+# subset cor dfs to top 100
+corbytis_tum_top100cl_df <- corbytis_tum_allcl_df[match(tum_top100cl, rownames(corbytis_tum_allcl_df)),]
+corbytis_con_top100cl_df <- corbytis_con_allcl_df[match(con_top100cl, rownames(corbytis_con_allcl_df)),]
+
+# make anno cols, will be different now for tum/con because they have different cl's
+tum_top100cl_annorow <- data.frame(Tissue = anno_col[match(tum_top100cl, rownames(anno_col)),]) # using match() to make sure it's in the order of tum_top100cl
+rownames(tum_top100cl_annorow) <- tum_top100cl
+
+con_top100cl_annorow <- data.frame("Origin Tissue" = anno_col[match(con_top100cl, rownames(anno_col)),]) # using match() to make sure it's in the order of con_top100cl
+rownames(con_top100cl_annorow) <- con_top100cl
+
+# I want to display the cell line common name
+tum_top100_cl_names <- master_sub[match(tum_top100cl, master_sub$SRA),]$common_name
+con_top100_cl_names <- master_sub[match(con_top100cl, master_sub$SRA),]$common_name
+
+pheatmap(corbytis_tum_top100cl_df, annotation_row = tum_top100cl_annorow, labels_row = tum_top100_cl_names, fontsize_row = 6, main = "Top 100 Cell Line Median Correlation to Tumor Tissue by TAGs")
+
+pheatmap(corbytis_con_top100cl_df, annotation_row = con_top100cl_annorow, labels_row = con_top100_cl_names, fontsize_row = 6, main = "Top 100 Cell Line Median Correlation to Control Tissue by TAGs")
+```
+
+### try heatmap with both tum and con tissue
+```{r}
+# top 100 cl's with highest median in BOTH
+tum_topcl <- data.frame(medcor = MatrixGenerics::rowMedians(as.matrix(corbytis_tum_allcl_df)), sra = rownames(corbytis_tum_allcl_df))
+con_topcl <- data.frame(medcor = MatrixGenerics::rowMedians(as.matrix(corbytis_con_allcl_df)), sra = rownames(corbytis_con_allcl_df))
+
+mix_topcl <- cbind(tum_topcl, con_topcl[match(tum_topcl$sra, con_topcl$sra),])
+mix_topcl <- data.frame(tumcor = mix_topcl[,1], concor = mix_topcl[,3], sra = mix_topcl[,2])
+mix_topcl$meancor <- rowMeans(cbind(mix_topcl$tumcor, mix_topcl$concor))
+mix_topcl <- mix_topcl[order(mix_topcl$meancor, decreasing = TRUE),]
+mix_top100cl <- mix_topcl$sra[1:100]
+
+# make new correlation matrix with both tissue types
+corbytis_alltis_allcl_df <- cbind(corbytis_tum_allcl_df, corbytis_con_allcl_df)
+colnames(corbytis_alltis_allcl_df) <- c(paste(stringr::str_to_title(colnames(corbytis_tum_allcl_df)), "Tumor"), paste("Control", stringr::str_to_title(colnames(corbytis_con_allcl_df))))
+
+corbytis_alltis_100cl_df <- corbytis_alltis_allcl_df[rownames(corbytis_alltis_allcl_df) %in% mix_top100cl,]
+corbytis_alltis_100cl_df <- corbytis_alltis_100cl_df[match(mix_top100cl, rownames(corbytis_alltis_100cl_df)),]
+
+# make annotation row and column
+## anno row = specifies origin tissue for each cell line
+alltis_annorow <- cbind(anno_col, rownames(anno_col)) # to retain sra IDs for lining up
+alltis_annorow <- alltis_annorow[rownames(alltis_annorow) %in% mix_top100cl,]
+alltis_annorow <- alltis_annorow[match(mix_top100cl, alltis_annorow$`rownames(anno_col)`),]
+alltis_annorow$`rownames(anno_col)` <- NULL
+colnames(alltis_annorow) <- "Cell Line Tumor Origin "
+
+## anno col = specifies whether tissue is control or tum
+alltis_annocol <- data.frame("Tissue Type" = c(rep("Tumor", length(colnames(corbytis_tum_allcl_df))), rep("Control", length(colnames(corbytis_con_allcl_df)))))
+rownames(alltis_annocol) <- colnames(corbytis_alltis_100cl_df)
+colnames(alltis_annocol) <- "Tissue Type"
+
+# cell line names
+alltis_top100cl_names <- master_sub[match(mix_top100cl, master_sub$SRA),]$common_name
+
+# heatmap!
+ann_colors <- list("Tissue Type" = c(Control = "darkblue", Tumor = "orange")) # make tissue type anno color consistent
+pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors)
+
+```

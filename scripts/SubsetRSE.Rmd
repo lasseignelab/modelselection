@@ -40,8 +40,8 @@ for(i in project){
     for(i in var_source){
       var_sub <- i
       
-      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, TRUE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/") # with purity
-      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, FALSE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/") # without
+      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, TRUE, TRUE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/") # with purity
+      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, FALSE, TRUE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/") # without
     }
   }
 }
