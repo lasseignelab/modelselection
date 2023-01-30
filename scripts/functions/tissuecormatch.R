@@ -98,9 +98,21 @@ tissuecormatch <- function(rootfilepath, row_sources = c("bone_c", "ccle", "hpa_
     }
     
     if(app_by == "tissue"){
-      res_df <- data.frame(sample = rownames(cor), samp_origin = sample_master_meta[sample_master_meta$rse_sampname %in% rownames(cor),]$tissue_coerced)
+      
+      samp_origin <- sample_master_meta[sample_master_meta$rse_sampname == rownames(cor)[1],]$tissue_coerced
+      for(i in rownames(cor)[-1]){
+        samp_origin <- c(samp_origin, sample_master_meta[sample_master_meta$rse_sampname == i,]$tissue_coerced)
+      }
+
+      res_df <- data.frame(sample = rownames(cor), samp_origin = samp_origin)
     } else if(app_by == "disease"){
-      res_df <- data.frame(sample = rownames(cor), samp_origin = sample_master_meta[sample_master_meta$rse_sampname %in% rownames(cor),]$disease_coerced)
+      
+      samp_origin <- sample_master_meta[sample_master_meta$rse_sampname == rownames(cor)[1],]$disease_coerced
+      for(i in rownames(cor)[-1]){
+        samp_origin <- c(samp_origin, sample_master_meta[sample_master_meta$rse_sampname == i,]$disease_coerced)
+      }
+      
+      res_df <- data.frame(sample = rownames(cor), samp_origin = samp_origin)
     }
     
     res_df <- cbind(res_df, res_top_first)

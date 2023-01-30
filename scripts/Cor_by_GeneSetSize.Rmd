@@ -31,7 +31,7 @@ for(i in c(100, 1000, 5000, 10000)){
 tissuecormatch(rootfilepath = "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c", "pdx"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/")
 
 # now just cell lines
-tissuecormatch(rootfilepath = "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c", "pdx"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/")
+tissuecormatch(rootfilepath = "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/")
 
 rm(sub, pur, var)
 ```
@@ -51,15 +51,19 @@ for(i in c(100, 1000, 5000, 10000)){
     }
   }
 }
+cor_temp <- readRDS("~/Desktop/work/R Projects/modelselection/data/rse_subsets/63856/corres/cor_dismatch_res_allCL.rds")[["dfo_summary"]]
+percent_map_to_origin <- c(percent_map_to_origin, cor_temp$same_as_origin/(cor_temp$different + cor_temp$same_as_origin))
+      id <- c(id, "all")
+
 View(cbind(id, percent_map_to_origin))
 rm(i, id, sub, var, cor_temp)
 ```
 
 # Plot how % mapping to origin changes between subsets
 ```{r}
-corr_table <- data.frame(genes_included = c(rep(100,4),rep(1000,4),rep(5000,4),rep(10000,4)), percent_map_to_origin = percent_map_to_origin, Variation = rep(c("TCGA", "TCGA", "GTEx", "GTEx"),4), Purity = rep(c("Included", "Excluded"),8))
+corr_table <- data.frame(genes_included = c(rep(100,4),rep(1000,4),rep(5000,4),rep(10000,4)), percent_map_to_origin = percent_map_to_origin[-17], Variation = rep(c("TCGA", "TCGA", "GTEx", "GTEx"),4), Purity = rep(c("Included", "Excluded"),8))
 library(ggplot2)
-ggplot(corr_table, aes(x = genes_included, y = percent_map_to_origin, color = Variation, linetype = Purity)) + geom_line() + geom_point() + geom_hline(aes(yintercept=0.237579), color="darkslategray", linetype="dashed") + labs(x = "Number of Genes Included", y = "Percent of Cell Lines That Correlate Highest to Origin Tissue")
+ggplot(corr_table, aes(x = genes_included, y = percent_map_to_origin, color = Variation, linetype = Purity)) + geom_line() + geom_point() + geom_hline(aes(yintercept=percent_map_to_origin[17]), color="darkslategray", linetype="dashed") + labs(x = "Number of Genes Included", y = "Percent of Cell Lines That Correlate Highest to Origin Tissue")
 ggsave("/Users/avery/Desktop/work/R Projects/modelselection/plots/percentmaptoorigin.png")
 rm(percent_map_to_origin, corr_table)
 ```
@@ -230,9 +234,4 @@ png(file="/Users/avery/Desktop/work/R Projects/modelselection/plots/genesetsize_
 hm_obj <- Heatmap(as.matrix(tissuecormatch_med_res), name = "Median Correlation", row_title = "Cancer Type", row_labels = substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), row_title_side = "right", column_labels = tissuecormatch_med_res_annorow[23,], top_annotation = column_ha, column_title = "Gene Subset Size", column_title_side = "top", column_names_side = "top", column_dend_side = "bottom", column_split = c(rep("", length(colnames(tissuecormatch_med_res))-1), 63856)) 
 draw(hm_obj)
 dev.off()
-
- ht <- Heatmap(...)
- draw(ht)
- dev.off()
-
 ```

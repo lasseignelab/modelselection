@@ -1,0 +1,441 @@
+# using fullcor object to build polished figures for bucket 1
+> bucket 1: Just GBM, global correlations, and most variable gene correlations across cell lines/patients and healthy tissue/PDX
+
+# prerequisite files:
+* sample_master_meta: generated from MetaTable RMD script using the RSE objects for each sample group, which themselves are generated from the DataDownload RMD script.
+* all sample group tpm files: the tpm objects will be generated as files if the DataDownload script is run, or can be created by running `x_tpm <- assays(x_rse)$TPM` using an RSE where x is your source of choice
+  
+# generate full correlation object
+```{r generate fullcor obj}
+fullcor <- cor(cbind(gtex_tpm, tcga_tpm, bone_n_tpm, bone_t_tpm, hpa_t_tpm), cbind(ccle_tpm, pdx_tpm, hpa_c_tpm, bone_c_tpm), method = "spearman") # note: this does not need to be built if built in Cor_by_GeneSetSize.Rmd
+saveRDS(fullcor, "~/Desktop/work/R Projects/modelselection/data/fullcor.rds") # so it doesn't need to be built again
+```
+
+# first, make subsets of correlation matrix, to brain samples, then to just PDX and just CL
+```{r subset fullcor to just brain}
+# subset for brain
+brain_samples <- sample_master_meta[grep("Brain", sample_master_meta$tissue_coerced),]$rse_sampname
+fullcor_brain <- fullcor[rownames(fullcor) %in% brain_samples, colnames(fullcor) %in% brain_samples]
+
+# samples that are tumor GBM
+gbm_samples <- sample_master_meta[grep("Glioblastoma Multiforme", sample_master_meta$disease),]$rse_sampname
+
+gbm_tis_samples <- gbm_samples[gbm_samples %in% sample_master_meta[sample_master_meta$origin == "Tumor Tissue",]$rse_sampname]
+
+# samples that are tumor brain
+bt_samples <- sample_master_meta[grep("Brain Cancer", sample_master_meta$disease_coerced),]$rse_sampname
+
+# samples that are control brain
+bcon_samples <- sample_master_meta[grep("Normal Brain", sample_master_meta$disease_coerced),]$rse_sampname
+
+# subset master sample metadata to brain
+sample_brain_meta <- data.frame(sample_master_meta[sample_master_meta$rse_sampname %in% brain_samples,])
+
+# make cell line correlation matrix
+cell_line_samples <- sample_master_meta[grep("Cell Line", sample_master_meta$origin),]$rse_sampname
+cell_line_samples <- cell_line_samples[cell_line_samples %in% brain_samples]
+cell_line_gbm_samples <- cell_line_samples[cell_line_samples %in% sample_brain_meta[grep("Grade Iv|Glioblastoma", sample_brain_meta$disease),]$rse_sampname]
+fullcor_brain_cl <- fullcor_brain[,colnames(fullcor_brain) %in% cell_line_samples]
+fullcor_gbm_cl <- fullcor_brain_cl[,colnames(fullcor_brain_cl) %in% gbm_samples]
+
+# make pdx correlation matrix
+pdx_samples <- sample_master_meta[grep("PDX", sample_master_meta$origin),]$rse_sampname
+pdx_samples <- pdx_samples[pdx_samples %in% brain_samples]
+fullcor_gbm_pdx <- fullcor_brain[, colnames(fullcor_brain) %in% pdx_samples]
+```
+
+# PCA
+```{r pca}
+library(ggplot2)
+library(ggfortify)
+
+# make one big tpm object for PC generation
+## I would just make the full tpm obj then subset but it's too big for local, takes forever
+gtex_tpm_b <- gtex_tpm[,colnames(gtex_tpm) %in% brain_samples]
+tcga_tpm_b <- tcga_tpm[,colnames(tcga_tpm) %in% brain_samples]
+hpa_t_tpm_b <- hpa_t_tpm[,colnames(hpa_t_tpm) %in% brain_samples]
+ccle_tpm_b <- ccle_tpm[,colnames(ccle_tpm) %in% brain_samples]
+hpa_c_tpm_b <- hpa_c_tpm[,colnames(hpa_c_tpm) %in% brain_samples]
+
+brain_tpm <- cbind(tcga_tpm_b, gtex_tpm_b, hpa_t_tpm_b, ccle_tpm_b, hpa_c_tpm_b, pdx_tpm)
+ 
+# need to pre-filter for PCA to work 
+## try filterByExpr in edgeR
+library(edgeR)
+keep <- filterByExpr(brain_tpm, min.count = 1, min.total.count = 1)
+brain_tpm_filt <- brain_tpm[keep,] # only about 5K genes unless I default parameter stringency, this now leaves 17K
+
+# now format for prcomp to compute PC's
+brain_tpm_meta <- data.frame(t(brain_tpm_filt))
+brain_tpm_meta$origin <- sample_brain_meta[,2]
+brain_pcares <- prcomp(t(brain_tpm_filt))
+
+# start with autoplot to find PCs with significant separation
+autoplot(brain_pcares, data = brain_tpm_meta, colour = "origin")
+autoplot(brain_pcares, data = brain_tpm_meta, colour = "origin", x = 2, y = 3)
+
+# additionally plot each cell line type
+## using autoplot because too many options for density rug plot
+## fix some metadata for cell line type first
+## NAs in cell_line col mean exclude NAs then subset
+sample_brain_meta[!is.na(sample_brain_meta$cell_line) & sample_brain_meta$cell_line=="u251mg_",]$cell_line <- "u251mg"
+sample_brain_meta[!is.na(sample_brain_meta$cell_line) & sample_brain_meta$cell_line=="shsy5y_",]$cell_line <- "shsy5y"
+
+# need to make and re-filt tpm matrix for just cell lines
+brain_cl_tpm <- brain_tpm_filt[,colnames(brain_tpm_filt) %in% cell_line_samples]
+
+keep <- filterByExpr(brain_cl_tpm, min.count = 1, min.total.count = 1)
+brain_cl_tpm_filt <- brain_cl_tpm[keep,]
+
+brain_cl_pcares <- prcomp(t(brain_cl_tpm_filt))
+
+# adding cell line info
+brain_cl_pca_meta <- data.frame(t(brain_cl_tpm_filt))
+brain_cl_pca_meta$cl <- sample_brain_meta[sample_brain_meta$rse_sampname %in% cell_line_samples,]$cell_line
+
+# make pca visual
+autoplot(brain_cl_pcares, data = brain_cl_pca_meta, colour = "cl")
+```
+
+# now the fancy PCAs
+```{r rug plot}
+library(mixOmics)
+library(PLSDAbatch)
+
+all_pca <- pca(t(brain_tpm_filt), ncomp = 3, scale = TRUE)
+
+# making origin factor
+brain_meta_sub <- matrix(sample_brain_meta[,2])
+rownames(brain_meta_sub) <- sample_brain_meta$rse_sampname
+brain_meta_sub[brain_meta_sub == "Normal Tissue",] <- "Control Tissue"
+brain_fact_origin <- factor(brain_meta_sub)
+
+brain_meta_sub <- matrix(sample_brain_meta[,1])
+rownames(brain_meta_sub) <- sample_brain_meta$rse_sampname
+brain_fact_cohort <- factor(brain_meta_sub)
+
+# making visual
+## by just origin type
+colorset <- rainbow(4)
+#png("~/Desktop/work/R Projects/modelselection/plots/pca_origintype.png")
+Scatter_Density(object = all_pca, batch = brain_fact_origin, color.set = colorset, batch.legend.title = "Origin Type")
+#dev.off() # NOTE: for some reason with png() the image quality is always bad, even when I scale up dimensions. Better off generating plot in R script then > save image
+
+# by data source
+colorset <- rainbow(6)
+Scatter_Density(object = all_pca, batch = brain_fact_cohort, color.set = colorset, batch.legend.title = "Data Cohort")
+Scatter_Density(object = all_pca, batch = brain_fact_cohort, color.set = colorset, trt = brain_fact_origin, batch.legend.title = "Data Cohort", trt.legend.title = "Data Type")
+
+# I kinda want to see what the split in control tissue is led by
+brain_meta_sub <- matrix(sample_brain_meta$sex)
+rownames(brain_meta_sub) <- sample_brain_meta$rse_sampname
+brain_fact_sex <- factor(brain_meta_sub)
+
+Scatter_Density(object = all_pca, batch = brain_fact_sex, color.set = colorset, batch.legend.title = "Origin Type")
+
+# clean env
+rm(brain_meta_sub, brain_fact_cohort, brain_fact_origin)
+rm(all_pca)# be careful if you still need this, obj takes a while to generate
+```
+
+# next, compare median correlation to GBM tissue, all brain tumor tissue, and brain control tissue
+```{r}
+# for cell lines
+## all
+fullcor_brain_cl_sub <- data.frame(GBM = colMedians(as.matrix(fullcor_brain_cl[rownames(fullcor_brain_cl) %in% gbm_samples,])))
+fullcor_brain_cl_sub$BT <- colMedians(as.matrix(fullcor_brain_cl[rownames(fullcor_brain_cl) %in% bt_samples,]))
+fullcor_brain_cl_sub$BCon <- colMedians(as.matrix(fullcor_brain_cl[rownames(fullcor_brain_cl) %in% bcon_samples,]))
+rownames(fullcor_brain_cl_sub) <- colnames(fullcor_brain_cl)
+brain_cl_cor <- colMedians(as.matrix(fullcor_brain_cl_sub))
+
+## just GBM
+fullcor_gbm_cl_sub <- data.frame(GBM = colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% gbm_samples,])))
+fullcor_gbm_cl_sub$BT <- colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% bt_samples,]))
+fullcor_gbm_cl_sub$BCon <- colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% bcon_samples,]))
+rownames(fullcor_gbm_cl_sub) <- colnames(fullcor_gbm_cl)
+gbm_cl_cor <- colMedians(as.matrix(fullcor_gbm_cl_sub))
+
+# for pdx
+fullcor_gbm_pdx_sub <- data.frame(GBM = colMedians(as.matrix(fullcor_gbm_pdx[rownames(fullcor_gbm_pdx) %in% gbm_samples,])))
+fullcor_gbm_pdx_sub$BT <- colMedians(as.matrix(fullcor_gbm_pdx[rownames(fullcor_gbm_pdx) %in% bt_samples,]))
+fullcor_gbm_pdx_sub$BCon <- colMedians(as.matrix(fullcor_gbm_pdx[rownames(fullcor_gbm_pdx) %in% bcon_samples,]))
+rownames(fullcor_gbm_pdx_sub) <- colnames(fullcor_gbm_pdx)
+gbm_pdx_cor <- colMedians(as.matrix(fullcor_gbm_pdx_sub))
+
+View(data.frame(GBM_pdx = gbm_pdx_cor, GBM_cl = gbm_cl_cor, BRAIN_cl = brain_cl_cor, row.names = c("GBM_tis", "BT_tis", "BCon_tis")))
+
+# clear objects
+rm(fullcor_brain_cl_sub, fullcor_gbm_pdx_sub, brain_cl_cor, brain_pdx_cor)
+```
+
+Correlation metrics:
+* to just GBM tissues: 0.845 all cell lines, 0.848 just gbm cell lines, 0.867 pdx
+* to all brain tumor tissues: 0.833 all cell lines, 0.836 just gbm cell lines, 0.86 pdx
+* to all brain control tissues: 0.811 all cell lines, 0.814 just gbm cell lines, 0.836 pdx
+
+# how many of each correlate highest with tissue of origin?
+```{r} 
+cor_dismatch_res_all <- readRDS("/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/63856/corres/cor_dismatch_res_all.rds") # local
+cor_bestmatch <- cor_dismatch_res_all[["alltoptissue"]]
+cor_bestmatch_cl <- cor_bestmatch[cor_bestmatch$sample %in% cell_line_samples,]
+length(cor_bestmatch_cl[cor_bestmatch_cl$samp_origin == cor_bestmatch_cl$res_top_first,]$sample) # 4
+View(table(cor_bestmatch_cl[cor_bestmatch_cl$samp_origin != cor_bestmatch_cl$res_top_first,]$res_top_first))
+cor_bestmatch_pdx <- cor_bestmatch[cor_bestmatch$sample %in% pdx_samples,]
+length(cor_bestmatch_pdx[cor_bestmatch_pdx$samp_origin == cor_bestmatch_pdx$res_top_first,]$sample) # 64
+
+# clear objects
+rm(cor_dismatch_res_all, cor_bestmatch, cor_bestmatch_cl, cor_bestmatch_pdx)
+```
+
+4 of 68 cell lines most closely correlated with brain cancer
+64 of 64 pdxs most closely correlated with brain cancer
+
+other correlations for cell lines:
+* adrenal cancer = 2
+* cervical cancer = 1
+* normal adrenal gland = 30
+* normal blood vessel = 3
+* normal uterus = 4
+* normal vagina = 1
+* pleural cancer = 5
+* skin cancer = 7
+* soft tissue cancer = 5
+
+# heatmaps
+```{r heatmaps}
+# first, heatmap of all tissue to all model
+library(pheatmap)
+
+# annotating rows and columns
+annotation_col <- data.frame(Model = sample_brain_meta[grep("Cell Line|PDX", sample_brain_meta$origin),]$origin)
+rownames(annotation_col) <- sample_brain_meta[grep("Cell Line|PDX", sample_brain_meta$origin),]$rse_sampname
+annotation_row <- data.frame(Tissue = sample_brain_meta[grep("Tumor Tissue|Normal Tissue", sample_brain_meta$origin),]$origin)
+rownames(annotation_row) <- sample_brain_meta[grep("Tumor Tissue|Normal Tissue", sample_brain_meta$origin),]$rse_sampname
+annotation_row$Tissue[annotation_row$Tissue == "Normal Tissue"] <- "Control Tissue"
+colnames(annotation_row) <- "Brain Tissue Type"
+
+pheatmap(fullcor_brain, annotation_col = annotation_col, annotation_row = annotation_row, show_rownames = FALSE, show_colnames = FALSE, color = colorRampPalette(c("yellow", "red"))(200))
+
+# now heatmap of median for each subset
+## making cor matrix subsets
+gbmcor <- fullcor_brain[rownames(fullcor_brain) %in% gbm_samples,]
+btcor <- fullcor_brain[rownames(fullcor_brain) %in% bt_samples,]
+bccor <- fullcor_brain[rownames(fullcor_brain) %in% bcon_samples,]
+
+## now take median across cols (tissues)
+gbmcor_tissub <- colMedians(gbmcor)
+btcor_tissub <- colMedians(btcor)
+bccor_tissub <- colMedians(bccor)
+
+## make all one object
+hm_rm <- data.frame(GBM_Tissue = gbmcor_tissub, Brain_Tum_Tissue = btcor_tissub, Brain_Control_Tissue = bccor_tissub)
+rownames(hm_rm) <- colnames(gbmcor)
+
+## hm time
+png("~/Desktop/work/R Projects/modelselection/plots/hm_brainsubs.png", width = 700, height = 900)
+pheatmap(hm_rm, annotation_row = annotation_col, fontsize_row = 5, angle_col = 45, labels_col = c("GBM Tumor Tissue", "All Brain Tumor Tissue", "Brain Control Tissue"), color = colorRampPalette(c("yellow", "red"))(200))
+dev.off()
+```
+
+# violin plot
+```{r}
+library(matrixStats)
+# let's focus in on A-172, u87mg, u251mg, and shsy5y for cell lines
+# first, pulling the selected cell lines + pdx's from fullcor, then making sure they're ordered
+brain_clsub_cor <- fullcor[,colnames(fullcor) %in% c(cell_line_samples, pdx_samples)]
+clsub_pdx_samples <- c(cell_line_samples, pdx_samples)
+
+# splitting into tum and con
+brain_clsub_tum <- brain_clsub_cor[rownames(brain_clsub_cor) %in% bt_samples,]
+brain_clsub_tum_med <- colMedians(brain_clsub_tum)
+brain_clsub_con <- brain_clsub_cor[rownames(brain_clsub_cor) %in% bcon_samples,]
+brain_clsub_con_med <- colMedians(brain_clsub_con)
+
+# making tissue vector
+origin <- c(rep("Cell Line", length(cell_line_samples)), rep("PDX", length(pdx_samples)))
+cl_type <- sample_brain_meta[sample_brain_meta$rse_sampname %in% clsub_pdx_samples,]$cell_line
+
+cl_pdx_violin <- data.frame(tum_med_cor = brain_clsub_tum_med, con_med_cor = brain_clsub_con_med, type = origin, cl = cl_type)
+rownames(cl_pdx_violin) <- clsub_pdx_samples
+
+library(ggplot2)
+# Basic violin plot
+con_violin <- ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Each Brain-Derived Model Sample to Brain Control Tissue")
+con_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Each Brain-Derived Model Sample to Brain Control Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
+
+tum_violin <- ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Each Brain-Derived Model Sample to Brain Tumor Tissue")
+
+tum_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Each Brain-Derived Model Sample to Brain Tumor Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
+```
+
+# Wilcoxon rank sum test on these two groups
+```{r}
+# Question : Is there any significant difference between pdx and cell line median correlation to matched tissue?
+library(rstatix)
+# computation - tumor
+stat.test <- cl_pdx_violin %>% 
+  rstatix::wilcox_test(tum_med_cor ~ type) %>%
+  add_significance()
+stat.test
+
+# effect size
+library(coin)
+cl_pdx_violin %>% wilcox_effsize(tum_med_cor ~ type)
+
+# report
+library(ggpubr)
+stat.test <- stat.test %>% add_xy_position(x = "group")
+
+tum_violin + 
+  stat_pvalue_manual(stat.test, tip.length = 0) +
+  labs(subtitle = get_test_label(stat.test, detailed = TRUE))
+
+tum_violin_alt + 
+  stat_pvalue_manual(stat.test, tip.length = 0) +
+  labs(subtitle = get_test_label(stat.test, detailed = TRUE))
+ggsave(filename = "~/Desktop/work/R Projects/aw_tumor_cellline_pdx/plots/tags_violin/fullgenesvio_brainclvspdx_tum.png", 
+          width = 5, height = 6)
+
+# again for control
+# computation - tumor
+stat.test <- cl_pdx_violin %>% 
+  rstatix::wilcox_test(con_med_cor ~ type) %>%
+  add_significance()
+stat.test
+
+# effect size
+library(coin)
+cl_pdx_violin %>% wilcox_effsize(con_med_cor ~ type)
+
+# report
+library(ggpubr)
+stat.test <- stat.test %>% add_xy_position(x = "group")
+con_violin + 
+  stat_pvalue_manual(stat.test, tip.length = 0) +
+  labs(subtitle = get_test_label(stat.test, detailed = TRUE))
+
+con_violin_alt + 
+  stat_pvalue_manual(stat.test, tip.length = 0) +
+  labs(subtitle = get_test_label(stat.test, detailed = TRUE))
+ggsave(filename = "~/Desktop/work/R Projects/aw_tumor_cellline_pdx/plots/tags_violin/fullgenesvio_brainclvspdx_con.png", 
+          width = 5, height = 6)
+```
+
+# violin plot how the two groups each recapitulated across tissue types
+```{r violin across tissues}
+# read in object with each model sample's median corr to each tissue
+cor_dismatch_res_all <- readRDS("~/Desktop/work/R Projects/modelselection/data/rse_subsets/63856/corres/cor_dismatch_res_all.rds")
+cor_dismatch_res_bytis <- cor_dismatch_res_all$fullcorapp
+
+# split by model
+cor_dismatch_res_bytis_cl <- cor_dismatch_res_bytis[rownames(cor_dismatch_res_bytis) %in% cell_line_samples,]
+cor_dismatch_res_bytis_pdx <- cor_dismatch_res_bytis[rownames(cor_dismatch_res_bytis) %in% pdx_samples,]
+
+# split into cancer, control
+cor_dismatch_res_cantis_cl <- cor_dismatch_res_bytis_cl[,grep("Cancer", colnames(cor_dismatch_res_bytis_cl))]
+cor_dismatch_res_cantis_pdx <- cor_dismatch_res_bytis_pdx[,grep("Cancer", colnames(cor_dismatch_res_bytis_pdx))]
+
+cor_dismatch_res_contis_cl <- cor_dismatch_res_bytis_cl[,grep("Normal", colnames(cor_dismatch_res_bytis_cl))]
+cor_dismatch_res_contis_pdx <- cor_dismatch_res_bytis_pdx[,grep("Normal", colnames(cor_dismatch_res_bytis_pdx))]
+
+# make big objects for split violin
+cor_dismatch_res_cantis <- rbind(cor_dismatch_res_cantis_cl, cor_dismatch_res_cantis_pdx)
+cor_dismatch_res_contis <- rbind(cor_dismatch_res_contis_cl, cor_dismatch_res_contis_pdx)
+
+# now need to remake object to be compatible (length-wise data instead of width-wise)
+cor_can_all_tis <- "x"
+for(i in 1:ncol(cor_dismatch_res_cantis)){
+  cor_can_all_tis <- rbind(cor_can_all_tis, cor_dismatch_res_cantis[i])
+  if(i != 27){
+    colnames(cor_can_all_tis) <- colnames(cor_dismatch_res_cantis[i+1])
+  }
+}
+cor_can_all_tis <- cor_can_all_tis[-1,]
+
+tissue <- colnames(cor_dismatch_res_cantis)
+tissue <- stringr::str_remove_all(tissue, " Cancer")
+tissue_rep <- rep(tissue[1], 127)
+for(i in tissue[-1]){
+  tissue_rep <- c(tissue_rep, rep(i, 127))
+}
+
+clpdx <- c(rep("Cell Line", 62), rep("PDX", 65))
+clpdx <- rep(clpdx, 27)
+
+cor_dismatch_cantis_long <- data.frame(cor = cor_can_all_tis, tissue = tissue_rep, Model = clpdx)
+cor_dismatch_cantis_long$cor <- as.numeric(cor_dismatch_cantis_long$cor)
+
+# two objects for data
+cor_dismatch_cantis_long_cl <- cor_dismatch_cantis_long[cor_dismatch_cantis_long$Model == "Cell Line",]
+cor_dismatch_cantis_long_pdx <- cor_dismatch_cantis_long[cor_dismatch_cantis_long$Model == "PDX",]
+
+
+######
+
+# do it again for control tissue
+
+# now need to remake object to be compatible (length-wise data instead of width-wise)
+cor_con_all_tis <- "x"
+for(i in 1:ncol(cor_dismatch_res_contis)){
+  cor_con_all_tis <- rbind(cor_con_all_tis, cor_dismatch_res_contis[i])
+  if(i != 34){
+    colnames(cor_con_all_tis) <- colnames(cor_dismatch_res_contis[i+1])
+  }
+}
+cor_con_all_tis <- cor_con_all_tis[-1,]
+
+tissue <- colnames(cor_dismatch_res_contis)
+tissue <- stringr::str_remove_all(tissue, "Normal ")
+tissue_rep <- rep(tissue[1], 127)
+for(i in tissue[-1]){
+  tissue_rep <- c(tissue_rep, rep(i, 127))
+}
+
+clpdx <- c(rep("Cell Line", 62), rep("PDX", 65))
+clpdx <- rep(clpdx, 34)
+
+cor_dismatch_contis_long <- data.frame(cor = cor_con_all_tis, tissue = tissue_rep, Model = clpdx)
+cor_dismatch_contis_long$cor <- as.numeric(cor_dismatch_contis_long$cor)
+
+# two objects for data
+cor_dismatch_contis_long_cl <- cor_dismatch_contis_long[cor_dismatch_contis_long$Model == "Cell Line",]
+cor_dismatch_contis_long_pdx <- cor_dismatch_contis_long[cor_dismatch_contis_long$Model == "PDX",]
+```
+
+# geom_split_violin fun
+```{r}
+source("/Users/avery/Desktop/work/R Projects/modelselection/scripts/functions/geom_split_violin.R")
+```
+
+```{r plot}
+ggplot(cor_dismatch_cantis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain-Derived Model Sample to Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1))
+ggsave(filename = "~/Desktop/work/R Projects/aw_tumor_cellline_pdx/plots/vio_braincltoeachtum.png", 
+          width = 13, height = 7)
+
+ggplot(cor_dismatch_contis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of Each Brain-Derived Model Sample to Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1))
+ggsave(filename = "~/Desktop/work/R Projects/aw_tumor_cellline_pdx/plots/vio_braincltoeachcon.png", 
+          width = 13, height = 7)
+```
+
+# Wilcoxon rank sum test between models for each tissue
+```{r}
+# Question : Is there any significant difference between pdx and cell line median correlation to EACH tissue?
+library(rstatix)
+cor_dismatch_stattest_alltis <- list()
+# they have different tissues so I'll do sep loops
+for(i in unique(cor_dismatch_cantis_long$tissue)){
+  cor_dismatch_stattest_alltis[["can"]][[paste(i)]] <- cor_dismatch_cantis_long[cor_dismatch_cantis_long$tissue == i,] %>%
+    rstatix::wilcox_test(cor ~ Model) %>% add_significance()
+}
+
+for(i in unique(cor_dismatch_contis_long$tissue)){
+  cor_dismatch_stattest_alltis[["con"]][[paste(i)]] <- cor_dismatch_contis_long[cor_dismatch_contis_long$tissue == i,] %>%
+    rstatix::wilcox_test(cor ~ Model) %>% add_significance()
+}
+
+# basically, they're all significant
+```
