@@ -175,6 +175,40 @@ ggplot(tis_gene_cor_both_vio_in, aes(tissue, corres, fill = Type)) + geom_split_
 ggsave(filename = "~/Desktop/work/R Projects/modelselection/plots/tags_violin/allcltomatchboth.png", 
           width = 13, height = 7, units = "in")
 ```
+#### Wilcoxon rank sum test on some of these groups
+```{r}
+# Question : Is there any significant difference between pdx and cell line median correlation to matched tissue when only considering TAGs?
+library(tidyverse)
+library(rstatix)
+library(ggpubr)
+library(coin)
+
+# make input object
+tis_gene_cor_stat <- list()
+
+for(i in unique(tis_gene_cor_tum_vio_in$tissue)){# I know the same tissues are represented in tum vs con
+  tis_gene_cor_stat[[i]][["corres"]] <- data.frame(med_cor = c(tis_gene_cor_tum_vio_in[tis_gene_cor_tum_vio_in$tissue == i,]$corres, tis_gene_cor_con_vio_in[tis_gene_cor_con_vio_in$tissue == i,]$corres), type = c(rep("Tumor", length(tis_gene_cor_tum_vio_in[tis_gene_cor_tum_vio_in$tissue == i,]$corres)), rep("Control", length(tis_gene_cor_con_vio_in[tis_gene_cor_con_vio_in$tissue == i,]$corres))))
+}
+
+# compute effect size for each
+for(i in names(tis_gene_cor_stat)){
+  # computation
+  tis_gene_cor_stat[[i]][["effect"]] <- tis_gene_cor_stat[[i]][["corres"]] %>%
+    rstatix::wilcox_test(med_cor ~ type) %>%
+    add_significance()
+  stat.test_tag # print output in window
+  # effect size
+  tis_gene_cor_stat[[i]][["corres"]] %>% wilcox_effsize(med_cor ~ type)
+}
+
+# view in dataframe form
+temp <- data.frame(tissue = names(tis_gene_cor_stat), effect = NA)
+for(i in temp$tissue){
+  temp[grep(i, temp$tissue),]$effect <- tis_gene_cor_stat[[i]][["effect"]][["p"]]
+}
+View(temp)
+rm(temp)
+```
 
 ## next, let's make a plot for each tissue
 ### how did each cell line recapitulate another tissue?
@@ -323,6 +357,7 @@ tis_gene_cor_pdxcl_con_v_plot <- ggplot(tis_gene_cor_pdxcl_con_vio_in, aes(x=typ
 library(tidyverse)
 library(rstatix)
 library(ggpubr)
+library(coin)
 
 # make input object
 tis_gene_cor_pdxcl_stat <- data.frame(tum_med_cor = tis_gene_cor_pdxcl_tum_vio_in$corres, con_med_cor = tis_gene_cor_pdxcl_con_vio_in$corres, type = tis_gene_cor_pdxcl_tum_vio_in$type)
@@ -334,11 +369,9 @@ stat.test_tag <- tis_gene_cor_pdxcl_stat %>%
 stat.test_tag
 
 # effect size
-library(coin)
 tis_gene_cor_pdxcl_stat %>% wilcox_effsize(tum_med_cor ~ type)
 
 # report
-library(ggpubr)
 stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
 tis_gene_cor_pdxcl_tum_v_plot + 
   stat_pvalue_manual(stat.test_tag, tip.length = 0) +

@@ -230,7 +230,7 @@ column_ha <- HeatmapAnnotation(df = as.data.frame(t(tissuecormatch_med_res_annor
                                           "Tumor Purity" = c("Included" = "#3C8EA9", "Excluded" = "#F15BB5"),
                                           "Variance" = c("TCGA" = "#00F5D4", "GTEx" = "#77267D", "All" = "#F5743D"))) # idk why the spaces are/need to be in sub size but they do
 
-png(file="/Users/avery/Desktop/work/R Projects/modelselection/plots/genesetsize_hm_indcancers.png", width = 700, height = 500)
+png(file="/Users/avery/Desktop/work/R Projects/modelselection/plots/genesetsize_hm_indcancers.png", width = 800, height = 600, pointsize = 14)
 hm_obj <- Heatmap(as.matrix(tissuecormatch_med_res), name = "Median Correlation", row_title = "Cancer Type", row_labels = substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), row_title_side = "right", column_labels = tissuecormatch_med_res_annorow[23,], top_annotation = column_ha, column_title = "Gene Subset Size", column_title_side = "top", column_names_side = "top", column_dend_side = "bottom", column_split = c(rep("", length(colnames(tissuecormatch_med_res))-1), 63856)) 
 draw(hm_obj)
 dev.off()
