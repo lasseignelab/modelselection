@@ -11,7 +11,9 @@ date: '2022-09-06'
 
 # load in data from pancanatlas
 ```{r load}
-purity_info_pca <- read.csv("/Users/avery/Desktop/work/R Projects/modelselection/data/TCGA_mastercalls.abs_tables_JSedit.fixed.csv")
+purity_info_pca <- read.csv("~/data/TCGA_mastercalls.abs_tables_JSedit.fixed.csv")
+
+tcga_rse <- readRDS("~/data/recount3/rse/tcga_rse.rds")
 
 tcga_barcode <- strtrim(tcga_rse@colData@listData[["tcga.tcga_barcode"]],15)
   
