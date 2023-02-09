@@ -12,13 +12,13 @@ output: html_document
 library(recount)
 library(recount3)
 library(readr)
-source("~/scripts/functions/rec3_rse_download.R") # change to where you have this function script saved
+source("scripts/functions/rec3_rse_download.R") # change to where you have this function script saved
 ```
 
 # utilize function in rec3_rse_download.R
 ## NOTE: prerequisite is cellosaurus problematic cell line list that is available in this directory's /data folder, adjust cellosaurusfilepath and savefilepath accordingly 
 ```{r function run, message=FALSE, warning=FALSE}
 for(i in c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c")){
- rec3_rse_download(project = i, cellosaurusfilepath = "~/data/problematic_celllines.csv", savefilepath = "~/data/recount3/") # will place full rse (with calc TPM), rawcounts, and tpm objects in destination folder
+ rec3_rse_download(project = i, cellosaurusfilepath = "data/problematic_celllines.csv", savefilepath = "data/recount3/") # will place full rse (with calc TPM), rawcounts, and tpm objects in destination folder
 }
 ```

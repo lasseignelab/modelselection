@@ -2,12 +2,12 @@
 
 # first, read in TPM and metadata
 ```{r}
-ccle_tpm <- readRDS("~/data/rse_subsets/63856/tpm/ccle_tpm.rds")
-hpa_c_tpm <- readRDS("~/data/rse_subsets/63856/tpm/hpa_c_tpm.rds")
-tcga_tpm <- readRDS("~/data/rse_subsets/63856/tpm/tcga_tpm.rds")
-gtex_tpm <- readRDS("~/data/rse_subsets/63856/tpm/gtex_tpm.rds")
-hpa_t_tpm <- readRDS("~/data/rse_subsets/63856/tpm/hpa_t_tpm.rds")
-sample_master_meta <- readRDS("~/data/sample_master_meta.rds")
+ccle_tpm <- readRDS("data/rse_subsets/63856/tpm/ccle_tpm.rds")
+hpa_c_tpm <- readRDS("data/rse_subsets/63856/tpm/hpa_c_tpm.rds")
+tcga_tpm <- readRDS("data/rse_subsets/63856/tpm/tcga_tpm.rds")
+gtex_tpm <- readRDS("data/rse_subsets/63856/tpm/gtex_tpm.rds")
+hpa_t_tpm <- readRDS("data/rse_subsets/63856/tpm/hpa_t_tpm.rds")
+sample_master_meta <- readRDS("data/sample_master_meta.rds")
 ```
 
 # make TPM subsets
@@ -25,7 +25,7 @@ con_tis_tpm <- con_tis_tpm[,colnames(con_tis_tpm) %in% sample_master_meta[sample
 
 # next, correlate between each gene
 ```{r}
-source("~/scripts/functions/cor_eachgene.R")
+source("scripts/functions/cor_eachgene.R")
 ```
 
 # small-scale test
@@ -40,16 +40,16 @@ rm(test, x, y)
 # run function
 ```{r test function}
 cl_tumtis_indgene <- cor_eachgene(cellline_tpm, tumor_tis_tpm)
-saveRDS(cl_tumtis_indgene, "~/data/rse_subsets/63856/ind_gene/cl_tumtis_indgene.rds")
+saveRDS(cl_tumtis_indgene, "data/rse_subsets/63856/ind_gene/cl_tumtis_indgene.rds")
 
 cl_contis_indgene <- cor_eachgene(cellline_tpm, con_tis_tpm)
-saveRDS(cl_contis_indgene, "~/data/rse_subsets/63856/ind_gene/cl_contis_indgene.rds")
+saveRDS(cl_contis_indgene, "data/rse_subsets/63856/ind_gene/cl_contis_indgene.rds")
 
 pdx_tumtis_indgene <- cor_eachgene(pdx_tpm, tumor_tis_tpm)
-saveRDS(pdx_tumtis_indgene, "~/data/rse_subsets/63856/ind_gene/pdx_tumtis_indgene.rds")
+saveRDS(pdx_tumtis_indgene, "data/rse_subsets/63856/ind_gene/pdx_tumtis_indgene.rds")
 
 pdx_contis_indgene <- cor_eachgene(pdx_tpm, con_tis_tpm)
-saveRDS(pdx_contis_indgene, "~/data/rse_subsets/63856/ind_gene/pdx_contis_indgene.rds")
+saveRDS(pdx_contis_indgene, "data/rse_subsets/63856/ind_gene/pdx_contis_indgene.rds")
 # put back into env if they have been removed
 ```
 
@@ -124,7 +124,7 @@ for(i in names(cl_pdx_indgene_sigvenn)){
 }  
 
 for(i in names(cl_pdx_indgene_sigvenn)){
-  png(file = paste("~/plots/ind_gene/", i, ".png", sep = ""))
+  png(file = paste("plots/ind_gene/", i, ".png", sep = ""))
   gostplot(cl_pdx_indgene_sigvenn[[i]][["gostres"]], interactive = FALSE)
   dev.off()
 }
@@ -410,10 +410,10 @@ for(i in names(indgene_cor_sig_res)){
       
       if(length(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) >= 10){
         ggplot(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,][1:10,], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= recall)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", name)) + labs(color = "Recall", size = "Recall") + scale_color_viridis(option="plasma")+ theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10)) %>%
-          ggexport(filename = paste("~/plots/ind_gene/", name,sig,sign,".png", sep = ""))
+          ggexport(filename = paste("plots/ind_gene/", name,sig,sign,".png", sep = ""))
       }else if(length(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) < 10){
         ggplot(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= recall)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", name)) + labs(color = "Recall", size = "Recall") + scale_color_viridis(option="plasma")+ theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10)) %>%
-          ggexport(filename = paste("~/plots/ind_gene/", name,sig,sign,".png", sep = ""))
+          ggexport(filename = paste("plots/ind_gene/", name,sig,sign,".png", sep = ""))
       }
     }
   }
@@ -501,7 +501,7 @@ for(i in c("cl_tumtis", "cl_contis", "pdx_tumtis", "pdx_contis")){
     indgene_cor_sig_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]] <- str_trunc(indgene_cor_sig_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]], 30)
     temp <- ggplot(indgene_cor_sig_res_sub_dfs_posneg[[comparison]][[i]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("Pathway") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", title[which(c("cl_tumtis", "cl_contis", "pdx_tumtis", "pdx_contis") == comparison)])) + labs(color = "Correlation", size = "Recall") + theme_bw() + theme(text = element_text(size=20, face = "bold"), axis.text.y = element_text(size = 20), legend.text = element_text(size = 22), legend.title = element_text(size = 25), axis.title = element_text(size = 25), title = element_text(size = 20)) + scale_size(range = c(5,10)) + guides(colour = guide_legend(override.aes = list(size=10)))
     
-    ggexport(temp, filename = paste("~/plots/ind_gene/dotplot/final/", comparison, "_", i, ".png", sep = ""), width = 1100, height = 700)
+    ggexport(temp, filename = paste("plots/ind_gene/dotplot/final/", comparison, "_", i, ".png", sep = ""), width = 1100, height = 700)
   }
 }
 ```

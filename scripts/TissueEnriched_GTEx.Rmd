@@ -2,9 +2,9 @@
 
 # requires qusage package for reading in GMTs
 ```{r read in up and down genes for each tissue}
-gtex_up_tissue_genes <- qusage::read.gmt("~/data/gene_set_library_up_crisp.gmt")
-gtex_down_tissue_genes <- qusage::read.gmt("~/data/gene_set_library_dn_crisp.gmt")
-sample_master_meta <- readRDS("~/data/sample_master_meta.rds")
+gtex_up_tissue_genes <- qusage::read.gmt("data/gene_set_library_up_crisp.gmt")
+gtex_down_tissue_genes <- qusage::read.gmt("data/gene_set_library_dn_crisp.gmt")
+sample_master_meta <- readRDS("data/sample_master_meta.rds")
 ```
 
 ## I need ens IDs for these genes
@@ -67,7 +67,7 @@ rm(gtex_tissues_cap, gtex_tissues_exc, cellline_tissues, i)
 
 # now, use function to correlate x by y with method including gene set
 ```{r tissue gene set cor fun}
-source("~/scripts/functions/tisgenesetcor.R")
+source("scripts/functions/tisgenesetcor.R")
 ```
 
 # make tpm objs to run fun
@@ -76,7 +76,7 @@ source("~/scripts/functions/tisgenesetcor.R")
 tpm_to_pull <- c("gtex", "tcga", "ccle", "bone_t", "hpa_t", "pdx", "hpa_c", "bone_c", "bone_n")
 
 for(i in tpm_to_pull){
-  assign(paste(i, "_tpm", sep = ""), readRDS(paste("~/data/recount3/tpm/", i, "_tpm.rds", sep = "")))
+  assign(paste(i, "_tpm", sep = ""), readRDS(paste("data/recount3/tpm/", i, "_tpm.rds", sep = "")))
 }
 
 rm(tpm_to_pull, i)
@@ -149,19 +149,19 @@ tis_gene_cor_con_vio_in <- tis_gene_cor_con_vio_in[tis_gene_cor_con_vio_in$tissu
 library(ggplot2)
 ggplot(tis_gene_cor_tum_vio_in, aes(x=tissue, y=corres, color=tissue)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Tumor Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Tumor Tissue") + ylim(0.4,0.9)
-ggsave(filename = "~/plots/tags_violin/allcltomatchtum.png", 
+ggsave(filename = "plots/tags_violin/allcltomatchtum.png", 
           width = 13, height = 7, units = "in")
 
 ggplot(tis_gene_cor_con_vio_in, aes(x=tissue, y=corres, color=tissue)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Control Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Control Tissue") + ylim(0.4,0.9)
-ggsave(filename = "~/plots/tags_violin/allcltomatchcon.png", 
+ggsave(filename = "plots/tags_violin/allcltomatchcon.png", 
           width = 13, height = 7, units = "in")
 ```
 
 # split violin
 ## geom_split_violin fun
 ```{r}
-source("~/scripts/functions/geom_split_violin.R")
+source("scripts/functions/geom_split_violin.R")
 ```
 
 # plot split
@@ -173,7 +173,7 @@ tis_gene_cor_both_vio_in <- tis_gene_cor_both_vio_in[tis_gene_cor_both_vio_in$ti
 tis_gene_cor_both_vio_in <- tis_gene_cor_both_vio_in[tis_gene_cor_both_vio_in$tissue != "Salivary Gland",]
 
 ggplot(tis_gene_cor_both_vio_in, aes(tissue, corres, fill = Type)) + geom_split_violin(width = 1) + labs(x = "Tissue of Origin", y = "Median Correlation Between Matched Cell Lines and Tissues") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_manual(values = c("darkblue", "orange")) + labs(fill = "Tissue Type")
-ggsave(filename = "~/plots/tags_violin/allcltomatchboth.png", 
+ggsave(filename = "plots/tags_violin/allcltomatchboth.png", 
           width = 13, height = 7, units = "in")
 ```
 #### Wilcoxon rank sum test on some of these groups
@@ -304,12 +304,12 @@ for(i in c("tum", "con")){
     if(type == "tum"){
       ggplot(allcl_totistags_vio_in[[paste(i)]][[paste(type)]], aes(x=tissue, y=corres, color=tissue)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + ggtitle(paste("Median Correlation of Cell Lines of Each Tissue Type to ", stringr::str_to_title(i), " Tumor Tissue by ", stringr::str_to_title(i), " TAGs", sep = ""))
-      ggsave(filename = paste("~/plots/tags_violin/", i, "tum.png", sep = ""), 
+      ggsave(filename = paste("plots/tags_violin/", i, "tum.png", sep = ""), 
           width = 15, height = 7, units = "in")
     } else if(type == "con"){
       ggplot(allcl_totistags_vio_in[[paste(i)]][[paste(type)]], aes(x=tissue, y=corres, color=tissue)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + ggtitle(paste("Median Correlation of Cell Lines of Each Tissue Type to ", stringr::str_to_title(i), " Control Tissue by ", stringr::str_to_title(i), " TAGs", sep = ""))
-      ggsave(filename = paste("~/plots/tags_violin/", i, "con.png", sep = ""), 
+      ggsave(filename = paste("plots/tags_violin/", i, "con.png", sep = ""), 
           width = 15, height = 7, units = "in")
     }
   }
@@ -376,7 +376,7 @@ stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
 tis_gene_cor_pdxcl_tum_v_plot + 
   stat_pvalue_manual(stat.test_tag, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
-ggsave(filename = "~/plots/tags_violin/brainclpdxtomatchtum.png", 
+ggsave(filename = "plots/tags_violin/brainclpdxtomatchtum.png", 
           width = 5, height = 6)
 
 # computation - control
@@ -395,7 +395,7 @@ stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
 tis_gene_cor_pdxcl_con_v_plot + 
   stat_pvalue_manual(stat.test_tag, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
-ggsave(filename = "~/plots/tags_violin/brainclpdxtomatchcon.png", 
+ggsave(filename = "plots/tags_violin/brainclpdxtomatchcon.png", 
           width = 5, height = 6)
 ```
 
@@ -470,11 +470,11 @@ tis_gene_cor_pdxcl_alltum_vio_in <- tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_co
 ```{r}
 library(ggplot2)
 ggplot(tis_gene_cor_pdxcl_alltum_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain Model to Each Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model")
-ggsave(filename = "~/plots/tags_violin/brainclpdxtoalltum.png", 
+ggsave(filename = "plots/tags_violin/brainclpdxtoalltum.png", 
           width = 5000, height = 2000, units = "px")
 
 ggplot(tis_gene_cor_pdxcl_allcon_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of Each Brain Model to Each Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model")
-ggsave(filename = "~/plots/tags_violin/brainclpdxtoallcon.png", 
+ggsave(filename = "plots/tags_violin/brainclpdxtoallcon.png", 
           width = 13, height = 7)
 ```
 

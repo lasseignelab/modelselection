@@ -8,12 +8,12 @@
 # generate full correlation object
 ```{r generate fullcor obj}
 fullcor <- cor(cbind(gtex_tpm, tcga_tpm, bone_n_tpm, bone_t_tpm, hpa_t_tpm), cbind(ccle_tpm, pdx_tpm, hpa_c_tpm, bone_c_tpm), method = "spearman") # note: this does not need to be built if built in Cor_by_GeneSetSize.Rmd
-RDS(fullcor, "~/data/fullcor.rds") # so it doesn't need to be built again
+RDS(fullcor, "data/fullcor.rds") # so it doesn't need to be built again
 ```
 ```{r}
 # to read in instead
-fullcor <- readRDS("~/data/fullcor.rds")
-sample_master_meta <- readRDS("~/data/sample_master_meta.rds")
+fullcor <- readRDS("data/fullcor.rds")
+sample_master_meta <- readRDS("data/sample_master_meta.rds")
 ```
 
 # first, make subsets of correlation matrix, to brain samples, then to just PDX and just CL
@@ -122,7 +122,7 @@ brain_fact_cohort <- factor(brain_meta_sub)
 # making visual
 ## by just origin type
 colorset <- rainbow(4)
-#png("~/plots/pca_origintype.png")
+#png("plots/pca_origintype.png")
 Scatter_Density(object = all_pca, batch = brain_fact_origin, color.set = colorset, batch.legend.title = "Origin Type")
 #dev.off() # NOTE: for some reason with png() the image quality is always bad, even when I scale up dimensions. Better off generating plot in R script then >  image
 
@@ -181,7 +181,7 @@ Correlation metrics:
 
 # how many of each correlate highest with tissue of origin?
 ```{r} 
-cor_dismatch_res_all <- readRDS("~/data/rse_subsets/63856/corres/cor_dismatch_res_all.rds")
+cor_dismatch_res_all <- readRDS("data/rse_subsets/63856/corres/cor_dismatch_res_all.rds")
 cor_bestmatch <- cor_dismatch_res_all[["alltoptissue"]]
 cor_bestmatch_cl <- cor_bestmatch[cor_bestmatch$sample %in% cell_line_samples,]
 length(cor_bestmatch_cl[cor_bestmatch_cl$samp_origin == cor_bestmatch_cl$res_top_first,]$sample) # 4
@@ -238,7 +238,7 @@ hm_rm <- data.frame(GBM_Tissue = gbmcor_tissub, Brain_Tum_Tissue = btcor_tissub,
 rownames(hm_rm) <- colnames(gbmcor)
 
 ## hm time
-png("~/plots/hm_brainsubs.png", width = 700, height = 900)
+png("plots/hm_brainsubs.png", width = 700, height = 900)
 pheatmap(hm_rm, annotation_row = annotation_col, fontsize_row = 5, angle_col = 45, labels_col = c("GBM Tumor Tissue", "All Brain Tumor Tissue", "Brain Control Tissue"), color = colorRampPalette(c("yellow", "red"))(200))
 dev.off()
 ```
@@ -303,7 +303,7 @@ tum_violin +
 tum_violin_alt + 
   stat_pvalue_manual(stat.test, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test, detailed = TRUE))
-gg(filename = "~/plots/tags_violin/fullgenesvio_brainclvspdx_tum.png", 
+gg(filename = "plots/tags_violin/fullgenesvio_brainclvspdx_tum.png", 
           width = 5, height = 6)
 
 # again for control
@@ -327,14 +327,14 @@ con_violin +
 con_violin_alt + 
   stat_pvalue_manual(stat.test, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test, detailed = TRUE))
-gg(filename = "~/plots/tags_violin/fullgenesvio_brainclvspdx_con.png", 
+gg(filename = "plots/tags_violin/fullgenesvio_brainclvspdx_con.png", 
           width = 5, height = 6)
 ```
 
 # violin plot how the two groups each recapitulated across tissue types
 ```{r violin across tissues}
 # read in object with each model sample's median corr to each tissue
-cor_dismatch_res_all <- readRDS("~/data/rse_subsets/63856/corres/cor_dismatch_res_all.rds")
+cor_dismatch_res_all <- readRDS("data/rse_subsets/63856/corres/cor_dismatch_res_all.rds")
 cor_dismatch_res_bytis <- cor_dismatch_res_all$fullcorapp
 
 # split by model
@@ -414,16 +414,16 @@ cor_dismatch_contis_long_pdx <- cor_dismatch_contis_long[cor_dismatch_contis_lon
 
 # geom_split_violin fun
 ```{r}
-source("~/scripts/functions/geom_split_violin.R")
+source("scripts/functions/geom_split_violin.R")
 ```
 
 ```{r plot}
 ggplot(cor_dismatch_cantis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain-Derived Model Sample to Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1))
-ggsave(filename = "~/plots/vio_braincltoeachtum.png", 
+ggsave(filename = "plots/vio_braincltoeachtum.png", 
           width = 13, height = 7)
 
 ggplot(cor_dismatch_contis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of Each Brain-Derived Model Sample to Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1))
-ggsave(filename = "~/plots/vio_braincltoeachcon.png", 
+ggsave(filename = "plots/vio_braincltoeachcon.png", 
           width = 13, height = 7)
 ```
 

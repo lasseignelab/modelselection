@@ -24,11 +24,11 @@ rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, save
     
     if(saveRSE == TRUE){
       if(var_source == "tcga"){
-        mainDir <- paste(savefilepath, subset_num, "/purinc/tcgavar/", sep = "")
+        mainDir <- paste(savefilepath, subset_num, "/purinc/tcgavar", sep = "")
           ifelse(!dir.exists(file.path(mainDir, "rse")), dir.create(file.path(mainDir, "rse")), FALSE)
           saveRDS(rse[rownames(rse) %in% varying_genes,], paste(mainDir, "rse/", project, "_rse", "_sub", subset_num, "_purinc_tcgavar.rds", sep = ""))
       } else if(var_source == "gtex"){
-        mainDir <- paste(savefilepath, subset_num, "/purinc/gtexvar/", sep = "")
+        mainDir <- paste(savefilepath, subset_num, "/purinc/gtexvar", sep = "")
           ifelse(!dir.exists(file.path(mainDir, "rse")), dir.create(file.path(mainDir, "rse")), FALSE)
           saveRDS(rse[rownames(rse) %in% varying_genes,], paste(mainDir, "rse/", project, "_rse", "_sub", subset_num, "_purinc_gtexvar.rds", sep = ""))
         
@@ -37,13 +37,13 @@ rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, save
     }
     if(saveTPM == TRUE){
       if(var_source == "tcga"){
-        mainDir <- paste(savefilepath, subset_num, "/purinc/tcgavar/", sep = "")
+        mainDir <- paste(savefilepath, subset_num, "/purinc/tcgavar", sep = "")
         ifelse(!dir.exists(file.path(mainDir, "tpm")), dir.create(file.path(mainDir, "tpm")), FALSE)
         saveRDS(rse[rownames(rse) %in% varying_genes,], paste(mainDir, "tpm/", project, "_tpm", "_sub", subset_num, "_purinc_tcgavar.rds", sep = ""))
         
 #        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, subset_num, "/purinc/tcgavar/tpm/", project, "_tpm", "_sub", subset_num, "_purinc_tcgavar.rds", sep = ""))
       } else if(var_source == "gtex"){
-        mainDir <- paste(savefilepath, subset_num, "/purinc/gtexvar/", sep = "")
+        mainDir <- paste(savefilepath, subset_num, "/purinc/gtexvar", sep = "")
         ifelse(!dir.exists(file.path(mainDir, "tpm")), dir.create(file.path(mainDir, "tpm")), FALSE)
         saveRDS(rse[rownames(rse) %in% varying_genes,], paste(mainDir, "tpm/", project, "_tpm", "_sub", subset_num, "_purinc_gtexvar.rds", sep = ""))
 #        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, subset_num, "/purinc/gtexvar/tpm/", project, "_tpm", "_sub", subset_num, "_purinc_gtexvar.rds", sep = ""))
@@ -59,13 +59,13 @@ rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, save
     
     if(saveRSE == TRUE){
       if(var_source == "tcga"){
-        mainDir <- paste(savefilepath, subset_num, "/purexc/tcgavar/", sep = "")
+        mainDir <- paste(savefilepath, subset_num, "/purexc/tcgavar", sep = "")
         ifelse(!dir.exists(file.path(mainDir, "rse")), dir.create(file.path(mainDir, "rse")), FALSE)
         saveRDS(rse[rownames(rse) %in% varying_genes,], paste(mainDir, "rse/", project, "_rse", "_sub", subset_num, "_purexc_tcgavar.rds", sep = ""))
         
         #saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, subset_num, "/purexc/tcgavar/rse/", project, "_rse", "_sub", subset_num, "_purexc_tcgavar.rds", sep = ""))
       } else if(var_source == "gtex"){
-        mainDir <- paste(savefilepath, subset_num, "/purexc/gtexvar/", sep = "")
+        mainDir <- paste(savefilepath, subset_num, "/purexc/gtexvar", sep = "")
         ifelse(!dir.exists(file.path(mainDir, "rse")), dir.create(file.path(mainDir, "rse")), FALSE)
         saveRDS(rse[rownames(rse) %in% varying_genes,], paste(mainDir, "rse/", project, "_rse", "_sub", subset_num, "_purexc_gtexvar.rds", sep = ""))
         
@@ -74,13 +74,13 @@ rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, save
     }
     if(saveTPM == TRUE){
       if(var_source == "tcga"){
-        mainDir <- paste(savefilepath, subset_num, "/purexc/tcgavar/", sep = "")
+        mainDir <- paste(savefilepath, subset_num, "/purexc/tcgavar", sep = "")
         ifelse(!dir.exists(file.path(mainDir, "tpm")), dir.create(file.path(mainDir, "tpm")), FALSE)
         saveRDS(rse[rownames(rse) %in% varying_genes,], paste(mainDir, "tpm/", project, "_tpm", "_sub", subset_num, "_purexc_tcgavar.rds", sep = ""))
         
         #saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, subset_num, "/purexc/tcgavar/tpm/", project, "_tpm", "_sub", subset_num, "_purexc_tcgavar.rds", sep = ""))
       } else if(var_source == "gtex"){
-        mainDir <- paste(savefilepath, subset_num, "/purexc/gtexvar/", sep = "")
+        mainDir <- paste(savefilepath, subset_num, "/purexc/gtexvar", sep = "")
         ifelse(!dir.exists(file.path(mainDir, "tpm")), dir.create(file.path(mainDir, "tpm")), FALSE)
         saveRDS(rse[rownames(rse) %in% varying_genes,], paste(mainDir, "tpm/", project, "_tpm", "_sub", subset_num, "_purexc_gtexvar.rds", sep = ""))
         
