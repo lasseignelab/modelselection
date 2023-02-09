@@ -22,3 +22,13 @@ for(i in c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", 
  rec3_rse_download(project = i, cellosaurusfilepath = "data/problematic_celllines.csv", savefilepath = "data/recount3/") # will place full rse (with calc TPM), rawcounts, and tpm objects in destination folder
 }
 ```
+
+running gtex with parallelized sub-function of rec3_rse_download(), called getgtex
+```{r}
+library(foreach)
+library(doParallel)
+cl <- makeCluster(4)
+registerDoParallel(cl, cores = 4)
+
+system.time(getgtex(savefilepath = "../data/recount3/"))
+```
