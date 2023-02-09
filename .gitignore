@@ -2,8 +2,10 @@
 .Rhistory
 .RData
 .Ruserdata
-data/recount3
-data/rse_subsets
+data/recount3/raw_counts/*.rds
+data/recount3/rse/*.rds
+data/recount3/tpm/*.rds
+data/rse_subsets/*/*/*/*.rds
 data/fullcor.rds
 scripts/processing
 scripts/SCRATCH.R
