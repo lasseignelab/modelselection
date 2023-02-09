@@ -8,7 +8,7 @@ date: '2022-08-10'
 
 # Prerequisites: objects with GTEx and TCGA TPM and all RSE objects, which are exported in the DataDownload script, rse_to_subset.R function script
 ```{r source load}
-source("/Users/avery/Desktop/work/R Projects/modelselection/scripts/functions/rse_to_subset.R") # change to where you have this function script saved
+source("~/scripts/functions/rse_to_subset.R") # change to where you have this function script saved
 ```
 
 # make objects with varying genes for TCGA and GTEx to use with function
@@ -20,7 +20,7 @@ tcga_varying_genes <- iqr_gene[order(iqr_gene, decreasing = T)]
 iqr_gene <- apply(gtex_tpm, 1, IQR, na.rm = TRUE)
 gtex_varying_genes <- iqr_gene[order(iqr_gene, decreasing = T)]
 
-purity_genes <- readRDS("~/Desktop/work/R Projects/modelselection/data/purity_genes.rds") # replace filepath
+purity_genes <- readRDS("~/data/purity_genes.rds") # replace filepath
 ```
 
 # use function in rse_to_subset.R script to create RSE subsets accounting for each variable (RSE source, subset size, in- or excluding tumor purity-correlated genes, basing variant gene rankings on TCGA vs GTEx)
@@ -32,7 +32,7 @@ var_source <- c("tcga", "gtex")
 
 for(i in project){
   project_sub <- i
-  rse_sub <- readRDS(paste("/Users/avery/Desktop/work/R Projects/modelselection/data/recount3/rse", "/", project_sub, "_rse.rds", sep = ""))
+  rse_sub <- readRDS(paste("~/data/recount3/rse", "/", project_sub, "_rse.rds", sep = ""))
   
   for(i in subset_num){
     subset_sub <- i
@@ -40,8 +40,8 @@ for(i in project){
     for(i in var_source){
       var_sub <- i
       
-      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, TRUE, TRUE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/") # with purity
-      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, FALSE, TRUE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/") # without
+      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, TRUE, TRUE, TRUE, "~/data/rse_subsets/") # with purity
+      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, FALSE, TRUE, TRUE, "~/data/rse_subsets/") # without
     }
   }
 }
