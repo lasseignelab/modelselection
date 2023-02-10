@@ -12,7 +12,7 @@ output: html_document
 library(recount)
 library(recount3)
 library(readr)
-source("scripts/functions/rec3_rse_download.R") # change to where you have this function script saved
+source("functions/rec3_rse_download.R") # change to where you have this function script saved
 ```
 
 # utilize function in rec3_rse_download.R

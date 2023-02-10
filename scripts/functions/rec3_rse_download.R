@@ -9,7 +9,7 @@ getgtex <- function(project = "gtex", savefilepath){
   #    rse <- NULL
   foreach(i = 1:length(proj), .combine=cbind) %dopar% {
     #temp_rse_list[[paste(i)]] <- recount3::create_rse_manual(
-    t <- recount3::create_rse_manual(
+    rse <- recount3::create_rse_manual(
       project = proj[i],
       project_home = proj_home,
       organism = "human",
@@ -18,8 +18,8 @@ getgtex <- function(project = "gtex", savefilepath){
       
     )
     require(recount3)
-    assay(t, "counts") <- recount3::transform_counts(t)
-    assays(t)$TPM <- recount::getTPM(t, length_var = "bp_length")
+    assay(rse, "counts") <- recount3::transform_counts(rse)
+    assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
     #print(str(t))
     #temp_rse_list[[paste(i)]] <- t
     #print(str(temp_rse_list))
