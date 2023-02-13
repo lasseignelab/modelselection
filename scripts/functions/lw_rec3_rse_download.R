@@ -1,44 +1,50 @@
-
 getgtex <- function(project = "gtex", savefilepath){
-  rse <- getgtexrse()
-  saverse(rse, savefilepath)
-}
-
-saverse <- function(project = "gtex", rse, savefilepath){
-  
-  # now, save RSE as object
-    saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
-    saveRDS(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
-  
-  # also save raw counts and TPM individually
-    saveRDS(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
-  
-}
-
-getgtexrse <- function(project = "gtex"){
   proj_home <- "data_sources/gtex"
   proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "BONE_MARROW", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
-  #proj <- c("BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE") #subset for testing
-
-  foreach(i = 1:length(proj), .combine=cbind) %dopar% {
+  #proj <- c("BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
+  
+  # if (length(proj) > 1){
+  # make list of all rse's, then collapse together
+  temp_rse_list <- list()
+  rse <- NULL
+  for (i in proj){
     #temp_rse_list[[paste(i)]] <- recount3::create_rse_manual(
-    rse <- recount3::create_rse_manual(
-      project = proj[i],
+    t <- recount3::create_rse_manual(
+      project = paste(i),
       project_home = proj_home,
       organism = "human",
       annotation = "gencode_v26",
       type = "gene"
       
     )
-    require(recount3)
-    assay(rse, "counts") <- recount3::transform_counts(rse)
-    assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
-
-    return(rse)
+    assay(t, "counts") <- transform_counts(t)
+    assays(t)$TPM <- recount::getTPM(t, length_var = "bp_length")
+    #print(str(t))
+    temp_rse_list[[paste(i)]] <- t
+    #print(str(temp_rse_list))
+    
+    #     if (project == "tcga"){
+    #      temp_rse_list[[paste(i)]] <- temp_rse_list[[paste(i)]][,grep("Primary", temp_rse_list[[paste(i)]]@colData@listData[["tcga.cgc_sample_sample_type"]])]
+    #   }
+    
+    #   print(str(temp_rse_list))
   }
+  #rse <- cbind(rse, temp_rse_list[[paste(i)]])
+  rse <- purrr::reduce(temp_rse_list, cbind) 
 
+#  return(rse)
+    # now, save RSE as object
+    saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
+    saveRDS(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
+    
+    # should have assigned an rse object at this point, now need to generate tpm
+    #assay(rse, "counts") <- transform_counts(rse)
+    #assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
+    
+
+    # also save raw counts and TPM individually
+    saveRDS(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
 }
-
 
 rec3_rse_download <- function(project = c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c"), cellosaurusfilepath, savefilepath){
   # creating a function to specify one of tcga, ccle, pdx, hpa, or gtex and download rse loaded with TPM

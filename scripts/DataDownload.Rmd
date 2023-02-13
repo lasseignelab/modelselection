@@ -31,4 +31,7 @@ cl <- makeCluster(4)
 registerDoParallel(cl, cores = 4)
 
 system.time(getgtex(savefilepath = "../data/recount3/"))
+
+t <- getgtexrse()
+saverse(rse = t, savefilepath = "../data/recount3/")
 ```
