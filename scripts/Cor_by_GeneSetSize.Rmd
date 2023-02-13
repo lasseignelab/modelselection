@@ -8,8 +8,8 @@ output: html_document
 > Evaluating differences in cell line/pdx performance in correlating to origin tissue depending on size of gene set, whether highly tumor purity-correlated genes are included/excluded, and whether gene rankings by most variable are based on TCGA or GTEx (i.e., whether they are ranked by variability across tumor types or across control tissues)
 
 ```{r source load}
-source("scripts/functions/tissuecormatch.R") # change to where you have this function script saved
-source("scripts/functions/tissuecormatch_median.R")
+source("../scripts/functions/tissuecormatch.R") # change to where you have this function script saved
+source("../scripts/functions/tissuecormatch_median.R")
 ```
 
 # I copied full (63856 genes) rses and tpm from my recount3 download folder into a data/rse_subsets/63856/ folder to be in the same root location as the subsets, in ../63856/tpm and ../63856/rse folders
@@ -23,15 +23,15 @@ for(i in c(100, 1000, 5000, 10000)){
     for(i in c("gtex", "tcga")){
       var <- i
       
-      tissuecormatch(rootfilepath = "data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = sub, pur = pur, var = var, app_by = "disease", save = TRUE, savefilepath = "data/rse_subsets/")
+      tissuecormatch(rootfilepath = "../data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = sub, pur = pur, var = var, app_by = "disease", save = TRUE, savefilepath = "../data/rse_subsets/")
     }
   }
 }
 # making object for ALL model sources
-tissuecormatch(rootfilepath = "data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c", "pdx"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "data/rse_subsets/")
+tissuecormatch(rootfilepath = "../data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c", "pdx"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "../data/rse_subsets/")
 
 # now just cell lines
-tissuecormatch(rootfilepath = "data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "data/rse_subsets/")
+tissuecormatch(rootfilepath = "../data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "../data/rse_subsets/")
 
 rm(sub, pur, var)
 ```
@@ -45,13 +45,13 @@ for(i in c(100, 1000, 5000, 10000)){
   for(i in c("tcga", "gtex")){
     var <- i
     for(i in c("purinc", "purexc")){
-       cor_temp <- readRDS(paste("data/rse_subsets/", sub, "/", i, "/", var, "var/corres/", "cor_dismatch_", i, "_", var, "var_res_", sub, ".rds", sep = ""))[["dfo_summary"]]
+       cor_temp <- readRDS(paste("../data/rse_subsets/", sub, "/", i, "/", var, "var/corres/", "cor_dismatch_", i, "_", var, "var_res_", sub, ".rds", sep = ""))[["dfo_summary"]]
       percent_map_to_origin <- c(percent_map_to_origin, cor_temp$same_as_origin/(cor_temp$different + cor_temp$same_as_origin))
       id <- c(id, paste(sub,var,i, sep = "_"))
     }
   }
 }
-cor_temp <- readRDS("data/rse_subsets/63856/corres/cor_dismatch_res_allCL.rds")[["dfo_summary"]]
+cor_temp <- readRDS("../data/rse_subsets/63856/corres/cor_dismatch_res_allCL.rds")[["dfo_summary"]]
 percent_map_to_origin <- c(percent_map_to_origin, cor_temp$same_as_origin/(cor_temp$different + cor_temp$same_as_origin))
       id <- c(id, "all")
 
@@ -63,8 +63,8 @@ rm(i, id, sub, var, cor_temp)
 ```{r}
 corr_table <- data.frame(genes_included = c(rep(100,4),rep(1000,4),rep(5000,4),rep(10000,4)), percent_map_to_origin = percent_map_to_origin[-17], Variation = rep(c("TCGA", "TCGA", "GTEx", "GTEx"),4), Purity = rep(c("Included", "Excluded"),8))
 library(ggplot2)
-ggplot(corr_table, aes(x = genes_included, y = percent_map_to_origin, color = Variation, linetype = Purity)) + geom_line() + geom_point() + geom_hline(aes(yintercept=percent_map_to_origin[17]), color="darkslategray", linetype="dashed") + labs(x = "Number of Genes Included", y = "Percent of Cell Lines That Correlate Highest to Origin Tissue")
-ggsave("plots/percentmaptoorigin.png")
+ggplot(corr_table, aes(x = genes_included, y = percent_map_to_origin, color = Variation, linetype = Purity)) + geom_line() + geom_point() + geom_hline(yintercept=percent_map_to_origin[17], color="darkslategray", linetype="dashed") + labs(x = "Number of Genes Included", y = "% of Cell Lines That Correlate Highest to Origin Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12))
+ggsave("../plots/percentmaptoorigin.png", units = "px", width = 2200, height = 1500)
 rm(percent_map_to_origin, corr_table)
 ```
 
@@ -72,23 +72,23 @@ rm(percent_map_to_origin, corr_table)
 ```{r run function}
 # TO VIEW AS A DF
 tissuecormatch_med_res <- data.frame(
-  oneH_I_T = tissuecormatch_median(filepath = "data/rse_subsets/", 100, "purinc", "tcga"),
-  oneH_E_T = tissuecormatch_median(filepath = "data/rse_subsets/", 100, "purexc", "tcga"),
-  oneH_I_G = tissuecormatch_median(filepath = "data/rse_subsets/", 100, "purinc", "gtex"),
-  oneH_E_G = tissuecormatch_median(filepath = "data/rse_subsets/", 100, "purexc", "gtex"),
-  oneK_I_T = tissuecormatch_median(filepath = "data/rse_subsets/", 1000, "purinc", "tcga"),
-  oneK_E_T = tissuecormatch_median(filepath = "data/rse_subsets/", 1000, "purexc", "tcga"),
-  oneK_I_G = tissuecormatch_median(filepath = "data/rse_subsets/", 1000, "purinc", "gtex"),
-  oneK_E_G = tissuecormatch_median(filepath = "data/rse_subsets/", 1000, "purexc", "gtex"),
-  fiveK_I_T = tissuecormatch_median(filepath = "data/rse_subsets/", 5000, "purinc", "tcga"),
-  fiveK_E_T = tissuecormatch_median(filepath = "data/rse_subsets/", 5000, "purexc", "tcga"),
-  fiveK_I_G = tissuecormatch_median(filepath = "data/rse_subsets/", 5000, "purinc", "gtex"),
-  fiveK_E_G = tissuecormatch_median(filepath = "data/rse_subsets/", 5000, "purexc", "gtex"),
-  tenK_I_T = tissuecormatch_median(filepath = "data/rse_subsets/", 10000, "purinc", "tcga"),
-  tenK_E_T = tissuecormatch_median(filepath = "data/rse_subsets/", 10000, "purexc", "tcga"),
-  tenK_I_G = tissuecormatch_median(filepath = "data/rse_subsets/", 10000, "purinc", "gtex"),
-  tenK_E_G = tissuecormatch_median(filepath = "data/rse_subsets/", 10000, "purexc", "gtex"),
-  ALL = tissuecormatch_median(filepath = "data/rse_subsets/", 63856)
+  oneH_I_T = tissuecormatch_median(filepath = "../data/rse_subsets/", 100, "purinc", "tcga"),
+  oneH_E_T = tissuecormatch_median(filepath = "../data/rse_subsets/", 100, "purexc", "tcga"),
+  oneH_I_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 100, "purinc", "gtex"),
+  oneH_E_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 100, "purexc", "gtex"),
+  oneK_I_T = tissuecormatch_median(filepath = "../data/rse_subsets/", 1000, "purinc", "tcga"),
+  oneK_E_T = tissuecormatch_median(filepath = "../data/rse_subsets/", 1000, "purexc", "tcga"),
+  oneK_I_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 1000, "purinc", "gtex"),
+  oneK_E_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 1000, "purexc", "gtex"),
+  fiveK_I_T = tissuecormatch_median(filepath = "../data/rse_subsets/", 5000, "purinc", "tcga"),
+  fiveK_E_T = tissuecormatch_median(filepath = "../data/rse_subsets/", 5000, "purexc", "tcga"),
+  fiveK_I_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 5000, "purinc", "gtex"),
+  fiveK_E_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 5000, "purexc", "gtex"),
+  tenK_I_T = tissuecormatch_median(filepath = "../data/rse_subsets/", 10000, "purinc", "tcga"),
+  tenK_E_T = tissuecormatch_median(filepath = "../data/rse_subsets/", 10000, "purexc", "tcga"),
+  tenK_I_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 10000, "purinc", "gtex"),
+  tenK_E_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 10000, "purexc", "gtex"),
+  ALL = tissuecormatch_median(filepath = "../data/rse_subsets/", 63856)
 )
 
 colnames(tissuecormatch_med_res) <- c("oneH_I_T", "oneH_E_T", "oneH_I_G", "oneH_E_G", "oneK_I_T", "oneK_E_T", "oneK_I_G", "oneK_E_G", "fiveK_I_T", "fiveK_E_T", "fiveK_I_G", "fiveK_E_G", "tenK_I_T", "tenK_E_T", "tenK_I_G", "tenK_E_G", "ALL")
@@ -99,9 +99,9 @@ colnames(tissuecormatch_med_res) <- c("oneH_I_T", "oneH_E_T", "oneH_I_G", "oneH_
 corr_median_lp <- data.frame(gene_set_size = rep(c(100,1000,5000,10000), 4), Purity = c(rep("Included", 4), rep("Excluded", 4), rep("Included", 4), rep("Excluded", 4)), Variation = c(rep("TCGA", 8), rep("GTEx", 8)), median_cor_across_tissues = c(median(tissuecormatch_med_res$oneH_I_T), median(tissuecormatch_med_res$oneK_I_T), median(tissuecormatch_med_res$fiveK_I_T), median(tissuecormatch_med_res$tenK_I_T), median(tissuecormatch_med_res$oneH_E_T), median(tissuecormatch_med_res$oneK_E_T), median(tissuecormatch_med_res$fiveK_E_T), median(tissuecormatch_med_res$tenK_E_T), median(tissuecormatch_med_res$oneH_I_G), median(tissuecormatch_med_res$oneK_I_G), median(tissuecormatch_med_res$fiveK_I_G), median(tissuecormatch_med_res$tenK_I_G), median(tissuecormatch_med_res$oneH_E_G), median(tissuecormatch_med_res$oneK_E_G), median(tissuecormatch_med_res$fiveK_E_G), median(tissuecormatch_med_res$tenK_E_G)))
 
 library(ggplot2)
-ggplot(corr_median_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line() + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(aes(yintercept=median(tissuecormatch_med_res$ALL)), color="darkslategray", linetype="dashed")
+ggplot(corr_median_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line() + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(yintercept=median(tissuecormatch_med_res$ALL), color="darkslategray", linetype="dashed") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12))
 
-ggsave("plots/medcortoorigin.png")
+ggsave("../plots/medcortoorigin.png", units = "px", width = 2200, height = 1500)
 rm(corr_median_lp)
 ```
 
@@ -115,7 +115,7 @@ for(i in c(100, 1000, 5000, 10000)){
     pur <- i
     for(i in c("tcgavar", "gtexvar")){
       var <- i
-      subset_gene_lists[[paste(num)]][[pur]][[var]] <- rownames(readRDS(paste("data/rse_subsets/", num, "/", pur, "/", var, "/tpm/bone_c_tpm_sub", num, "_", pur, "_", var, ".rds", sep = "")))
+      subset_gene_lists[[paste(num)]][[pur]][[var]] <- rownames(readRDS(paste("../data/rse_subsets/", num, "/", pur, "/", var, "/tpm/bone_c_tpm_sub", num, "_", pur, "_", var, ".rds", sep = "")))
     }
   }
 }
@@ -132,7 +132,7 @@ for(i in c(100, 1000, 5000, 10000)){
     for(i in c("tcga", "gtex")){
       var <- i
       
-      subset_medians <- c(subset_medians, median(rowMedians(tissuecormatch(rootfilepath = "data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = num, pur = pur, var = var, app = FALSE, save = FALSE)[["fullcor"]])))
+      subset_medians <- c(subset_medians, median(rowMedians(tissuecormatch(rootfilepath = "../data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = num, pur = pur, var = var, app = FALSE, save = FALSE)[["fullcor"]])))
       
       subsets <- c(subsets, paste(num, pur, var, sep = "_"))
     }
@@ -142,7 +142,7 @@ for(i in c(100, 1000, 5000, 10000)){
 
 ```{r}
 fullcor <- cor(cbind(gtex_tpm, tcga_tpm, bone_n_tpm, bone_t_tpm, hpa_t_tpm), cbind(ccle_tpm, pdx_tpm, hpa_c_tpm, bone_c_tpm), method = "spearman") # this object takes a while, only build if not already in env/exported
-saveRDS(fullcor, "data/fullcor.rds") # so it doesn't need to be built again
+saveRDS(fullcor, "../data/fullcor.rds") # so it doesn't need to be built again
 
 subset_medians <- c(subset_medians, median(rowMedians(fullcor)))
 subsets <- c(subsets, "full")
@@ -164,7 +164,7 @@ subset_table_lp[grep("exc", subset_table_lp$name),]$Purity <- "exc"
 library(ggplot2)
 ggplot(subset_table_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line() + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(aes(yintercept=subset_medians[17]), color="darkslategray", linetype="dashed")
 
-ggsave("plots/medcortoorigin_fromfullcor.png") # this is used in final over other one
+ggsave("../plots/medcortoorigin_fromfullcor.png") # this is used in final over other one
 ```
 
 ## make bubble plot for individual tissues
@@ -182,10 +182,10 @@ ggplot(tissuecormatch_med_bp, aes(x = Cancer, y = cor, size = Subset, color = Va
 
 # split into 2 to lessen complexity
 ggplot(tissuecormatch_med_bp[tissuecormatch_med_bp$Purity != "exc",], aes(x = Cancer, y = cor, size = Subset, color = Variance)) + geom_count() + theme(axis.text.x = element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue") + ggtitle("Including Tumor Purity-Correlated Genes") + ylim(0,1)
-ggsave("plots/medcortoorigin_tissplit_incpur.png")
+ggsave("../plots/medcortoorigin_tissplit_incpur.png")
 
 ggplot(tissuecormatch_med_bp[tissuecormatch_med_bp$Purity != "inc",], aes(x = Cancer, y = cor, size = Subset, color = Variance)) + geom_count() + theme(axis.text.x = element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue") + ggtitle("Excluding Tumor Purity-Correlated Genes") + ylim(0,1)
-ggsave("plots/medcortoorigin_tissplit_excpur.png")
+ggsave("../plots/medcortoorigin_tissplit_excpur.png")
 ```
 
 # redo bubble plot as a heatmap
@@ -230,7 +230,7 @@ column_ha <- HeatmapAnnotation(df = as.data.frame(t(tissuecormatch_med_res_annor
                                           "Tumor Purity" = c("Included" = "#3C8EA9", "Excluded" = "#F15BB5"),
                                           "Variance" = c("TCGA" = "#00F5D4", "GTEx" = "#77267D", "All" = "#F5743D"))) # idk why the spaces are/need to be in sub size but they do
 
-png(file="plots/genesetsize_hm_indcancers.png", width = 800, height = 600, pointsize = 14)
+png(file="../plots/genesetsize_hm_indcancers.png", width = 800, height = 600, pointsize = 14)
 hm_obj <- Heatmap(as.matrix(tissuecormatch_med_res), name = "Median Correlation", row_title = "Cancer Type", row_labels = substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), row_title_side = "right", column_labels = tissuecormatch_med_res_annorow[23,], top_annotation = column_ha, column_title = "Gene Subset Size", column_title_side = "top", column_names_side = "top", column_dend_side = "bottom", column_split = c(rep("", length(colnames(tissuecormatch_med_res))-1), 63856)) 
 draw(hm_obj)
 dev.off()
