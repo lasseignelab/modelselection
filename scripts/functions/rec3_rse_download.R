@@ -72,8 +72,8 @@ getgtexrse <- function(project = "gtex", savefilepath){
     #save RSE for each project
     saveRDS(rse, paste(savefilepath, "rse/", paste(proj[i]), "_gtex_rse.rds", sep = ""))
     #save csv of TPM and rawcounts for each
-    write.csv(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", paste(proj[i]), "_gtex_tpm.csv", sep = ""))
-    write.csv(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", paste(proj[i]), "_gtex_rawcounts.csv", sep = ""))
+    #write.csv(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", paste(proj[i]), "_gtex_tpm.csv", sep = ""))
+    #write.csv(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", paste(proj[i]), "_gtex_rawcounts.csv", sep = ""))
 
     return(rse)
   }
