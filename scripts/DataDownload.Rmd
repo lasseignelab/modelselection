@@ -33,22 +33,31 @@ running gtex with parallelized sub-function of rec3_rse_download(), called getgt
 cl <- makeCluster(4)
 registerDoParallel(cl, cores = 4)
 
-#system.time(getgtex(savefilepath = "../data/recount3/"))
-
+startTime <- Sys.time()
 t <- getgtexrse(savefilepath = "../data/recount3/")
+endTime <- Sys.time()
+print(endTime - startTime)
+#tempraw <- saveraw(savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/raw_counts/gtex_rawcounts.csv")
 
-tempraw <- saveraw(savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/raw_counts/gtex_rawcounts.csv")
-#big memory package
-#tempraw <- big.matrix(tempraw)
-#temptpm <- 
-savetpm(savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/tpm/gtex_tpm.csv")
-#test <- as.big.matrix(matrix(tempraw))
+#savetpm(savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/tpm/gtex_tpm.csv")
+
 
 stopCluster(cl)
 ```
 
-big memory package
+read back in tpm and raw counts
 ```{r}
+fls <- list.files("../data/recount3/test/tpm", pattern = "*gtex_tpm.csv", full.names = TRUE)
+rsefiles <- Sys.glob(paste0("../data/recount3/test/tpm/*gtex_tpm.csv")) 
 
+startTime <- Sys.time()
+#result_list <- sapply(rsefiles, function(x) get(eval(read.csv(x))))
+
+fls <- list.files("../data/recount3/test/tpm", pattern = "*gtex_tpm.csv", full.names = TRUE) %>% 
+  lapply(read_csv) %>% #bind_cols
+  reduce(full_join, by = "...1")
+endTime <- Sys.time()
+print(endTime - startTime)
+                      
 ```
 
