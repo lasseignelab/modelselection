@@ -13,6 +13,10 @@ library(recount)
 library(recount3)
 library(readr)
 source("functions/rec3_rse_download.R") # change to where you have this function script saved
+library(foreach)
+library(doParallel)
+library(bigmemory)
+library(tidyverse)
 ```
 
 # utilize function in rec3_rse_download.R
@@ -25,13 +29,26 @@ for(i in c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", 
 
 running gtex with parallelized sub-function of rec3_rse_download(), called getgtex
 ```{r}
-library(foreach)
-library(doParallel)
+
 cl <- makeCluster(4)
 registerDoParallel(cl, cores = 4)
 
-system.time(getgtex(savefilepath = "../data/recount3/"))
+#system.time(getgtex(savefilepath = "../data/recount3/"))
 
-t <- getgtexrse()
-saverse(rse = t, savefilepath = "../data/recount3/")
+t <- getgtexrse(savefilepath = "../data/recount3/")
+
+tempraw <- saveraw(savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/raw_counts/gtex_rawcounts.csv")
+#big memory package
+#tempraw <- big.matrix(tempraw)
+#temptpm <- 
+savetpm(savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/tpm/gtex_tpm.csv")
+#test <- as.big.matrix(matrix(tempraw))
+
+stopCluster(cl)
 ```
+
+big memory package
+```{r}
+
+```
+

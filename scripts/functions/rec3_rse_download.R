@@ -4,24 +4,60 @@ getgtex <- function(project = "gtex", savefilepath){
   saverse(rse, savefilepath)
 }
 
-saverse <- function(project = "gtex", rse, savefilepath){
+saveraw <- function(project = "gtex", savefilepath){
+  rsefiles <- Sys.glob(paste0(savefilepath, "rse/*_gtex_rse.rds")) #, paste(proj[i]), "_gtex_rse.rds", sep = "")
+  print(rsefiles)
+  #rawcounts <- describe(rsefiles)
+  foreach(i = 1:length(rsefiles), .combine=cbind, .packages = "bigmemory") %dopar% {
+    rse <- readRDS(rsefiles[i])
+    raw <-  rse@assays@data@listData[["raw_counts"]]
+    #write.csv(raw, file = paste(savefilepath, "raw_counts/gtex_rawcounts.csv", sep = ""))
+    #print(class(raw))
+   # rawcounts <- attach.big.matrix(raw)
+    #tpm <- rse@assays@data@listData[["TPM"]]
+#    print(str(raw))
+#    print(str(tpm))
+#    return(rsefiles)
   
+#  saveRDS(tpm, paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
+  }
   # now, save RSE as object
-    saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
-    saveRDS(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
+#    saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
+#    saveRDS(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
   
   # also save raw counts and TPM individually
-    saveRDS(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
+#    saveRDS(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
+#  saveRDS(raw, paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
   
+  #try to make into a bigmemory matrix?
+  #as.big.matrix(rawcounts)
+  
+  #print(str(rawcounts))
+#  return(bigmemory::big.matrix(rawcounts))
+  #return(rawcounts)
 }
 
-getgtexrse <- function(project = "gtex"){
+
+
+savetpm <- function(project = "gtex", savefilepath){
+  rsefiles <- Sys.glob(paste0(savefilepath, "rse/*_gtex_rse.rds")) 
+  print(rsefiles)
+
+  foreach(i = 1:length(rsefiles), .combine=cbind, .packages = "bigmemory") %dopar% {
+    rse <- readRDS(rsefiles[i])
+    tpm <-  rse@assays@data@listData[["TPM"]]
+
+  }
+
+}
+
+getgtexrse <- function(project = "gtex", savefilepath){
   proj_home <- "data_sources/gtex"
   proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "BONE_MARROW", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
   #proj <- c("BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE") #subset for testing
 
-  foreach(i = 1:length(proj), .combine=cbind) %dopar% {
-    #temp_rse_list[[paste(i)]] <- recount3::create_rse_manual(
+  foreach(i = 1:length(proj)) %dopar% {
+    require(recount3)
     rse <- recount3::create_rse_manual(
       project = proj[i],
       project_home = proj_home,
@@ -33,10 +69,12 @@ getgtexrse <- function(project = "gtex"){
     require(recount3)
     assay(rse, "counts") <- recount3::transform_counts(rse)
     assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
+    #save RSE for each project
+    saveRDS(rse, paste(savefilepath, "rse/", paste(proj[i]), "_gtex_rse.rds", sep = ""))
 
     return(rse)
   }
-
+#return(rse)
 }
 
 
