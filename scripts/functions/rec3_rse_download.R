@@ -1,46 +1,95 @@
+getSRAproj <- function(project, cellosaurusfilepath, savefilepath){
+  
+  proj_home <- "data_sources/sra"
+  
+  #assign project # by input
+  proj <- ifelse(project == "ccle", "SRP186687", 
+                 ifelse(project == "hpa_c", "SRP017465", 
+                        ifelse(project == "hpa_t", "ERP003613", 
+                               ifelse(project == "pdx", "SRP201347", 
+                                      ifelse(project %in% c("bone_t", "bone_n", "bone_c"), "SRP090849", stop("project was not one of the available options: ccle, hpa_c, hpa_t, pdx, bone_t, bone_n, bone_c")
+                                             
+                                      )
+                               )
+                        )
+                 )
+  )
+  
+  print(paste(proj))
+  
+  rse <- recount3::create_rse_manual(
+    project = proj,
+    project_home = proj_home,
+    organism = "human",
+    annotation = "gencode_v26",
+    type = "gene"
+  )
+  
+  #calculate TPM
+  assay(rse, "counts") <- recount3::transform_counts(rse)
+  assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
+  
+  #save RSE 
+  saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
+  
+  #save TPM and raw counts as csv's
+  saveRDS(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
+  saveRDS(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
+  
+  return(rse)
+}
 
+
+########TCGA FUNCTIONS
+getTCGArse <- function(project = "tcga", savefilepath){
+  proj_home <- "data_sources/tcga"
+  #in recount3, TCGA is split up by tissue for projects
+  proj <- c("BRCA","KIRC","LUAD","UCEC","THCA","PRAD","LUSC","HNSC","COAD","LGG","SKCM","LAML", "STAD","BLCA","OV","LIHC","KIRP","CESC","SARC","ESCA","PCPG","PAAD","READ","GBM","TGCT","THYM","KICH","MESO","UVM","ACC","UCS","DLBC","CHOL")
+  #proj <- c("ACC","UCS","DLBC","CHOL") #subset for testing
+  
+  foreach(i = 1:length(proj), .packages = "recount3") %dopar% {
+    rse <- recount3::create_rse_manual(
+      project = proj[i],
+      project_home = proj_home,
+      organism = "human",
+      annotation = "gencode_v26",
+      type = "gene"
+      
+    )
+#    rse[[paste(i)]] <- rse[[paste(i)]][,grep("Primary", rse[[paste(i)]]@colData@listData[["tcga.cgc_sample_sample_type"]])]
+    rse <- rse[,grep("Primary", rse@colData@listData[["tcga.cgc_sample_sample_type"]])]
+    require(recount3)
+    assay(rse, "counts") <- recount3::transform_counts(rse)
+    assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
+    
+    saveRDS(rse, paste(savefilepath, "rse/", paste(proj[i]), "_tcga_rse.rds", sep = ""))
+    return(rse)
+  }
+  
+}
+
+
+########GTEX FUNCTIONS
 getgtex <- function(project = "gtex", savefilepath){
   rse <- getgtexrse()
   saverse(rse, savefilepath)
 }
 
-saveraw <- function(project = "gtex", savefilepath){
-  rsefiles <- Sys.glob(paste0(savefilepath, "rse/*_gtex_rse.rds")) #, paste(proj[i]), "_gtex_rse.rds", sep = "")
+getRawCounts <- function(project, savefilepath){
+  rsefiles <- Sys.glob(paste0(savefilepath, "rse/*_", project, "_rse.rds")) #, paste(proj[i]), "_gtex_rse.rds", sep = "")
   print(rsefiles)
-  #rawcounts <- describe(rsefiles)
+  
   foreach(i = 1:length(rsefiles), .combine=cbind, .packages = "bigmemory") %dopar% {
     rse <- readRDS(rsefiles[i])
     raw <-  rse@assays@data@listData[["raw_counts"]]
-    #write.csv(raw, file = paste(savefilepath, "raw_counts/gtex_rawcounts.csv", sep = ""))
-    #print(class(raw))
-   # rawcounts <- attach.big.matrix(raw)
-    #tpm <- rse@assays@data@listData[["TPM"]]
-#    print(str(raw))
-#    print(str(tpm))
-#    return(rsefiles)
-  
-#  saveRDS(tpm, paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
+
   }
-  # now, save RSE as object
-#    saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
-#    saveRDS(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
-  
-  # also save raw counts and TPM individually
-#    saveRDS(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
-#  saveRDS(raw, paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
-  
-  #try to make into a bigmemory matrix?
-  #as.big.matrix(rawcounts)
-  
-  #print(str(rawcounts))
-#  return(bigmemory::big.matrix(rawcounts))
-  #return(rawcounts)
+
 }
 
 
-
-savetpm <- function(project = "gtex", savefilepath){
-  rsefiles <- Sys.glob(paste0(savefilepath, "rse/*_gtex_rse.rds")) 
+getTPM <- function(project, savefilepath){
+  rsefiles <- Sys.glob(paste0(savefilepath, "rse/*_", project, "_rse.rds")) 
   print(rsefiles)
 
   foreach(i = 1:length(rsefiles), .combine=cbind, .packages = "bigmemory") %dopar% {
@@ -51,13 +100,14 @@ savetpm <- function(project = "gtex", savefilepath){
 
 }
 
-getgtexrse <- function(project = "gtex", savefilepath){
+getGTEXrse <- function(project = "gtex"){
   proj_home <- "data_sources/gtex"
-  proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "BONE_MARROW", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
-  #proj <- c("BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE") #subset for testing
-
+  #in recount3, GTEx is split up by tissue for projects
+  #proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "BONE_MARROW", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
+  proj <- c("BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE") #subset for testing
+  
   foreach(i = 1:length(proj)) %dopar% {
-    require(recount3)
+    #temp_rse_list[[paste(i)]] <- recount3::create_rse_manual(
     rse <- recount3::create_rse_manual(
       project = proj[i],
       project_home = proj_home,
@@ -69,15 +119,11 @@ getgtexrse <- function(project = "gtex", savefilepath){
     require(recount3)
     assay(rse, "counts") <- recount3::transform_counts(rse)
     assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
-    #save RSE for each project
-    saveRDS(rse, paste(savefilepath, "rse/", paste(proj[i]), "_gtex_rse.rds", sep = ""))
-    #save csv of TPM and rawcounts for each
-    #write.csv(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", paste(proj[i]), "_gtex_tpm.csv", sep = ""))
-    #write.csv(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", paste(proj[i]), "_gtex_rawcounts.csv", sep = ""))
-
+    
+    saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
     return(rse)
   }
-#return(rse)
+  
 }
 
 

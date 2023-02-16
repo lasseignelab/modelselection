@@ -22,10 +22,15 @@ library(tidyverse)
 # utilize function in rec3_rse_download.R
 ## NOTE: prerequisite is cellosaurus problematic cell line list that is available in this directory's /data folder, adjust cellosaurusfilepath and savefilepath accordingly 
 ```{r function run, message=FALSE, warning=FALSE}
-for(i in c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c")){
- rec3_rse_download(project = i, cellosaurusfilepath = "data/problematic_celllines.csv", savefilepath = "data/recount3/") # will place full rse (with calc TPM), rawcounts, and tpm objects in destination folder
-}
+#for(i in c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c")){
+# rec3_rse_download(project = i, cellosaurusfilepath = "data/problematic_celllines.csv", savefilepath = "data/recount3/") # will place full rse (with calc TPM), rawcounts, and tpm objects in destination folder
+#}
 ```
+
+## All non-TCGA/GTEx Studies
+getSRAproj function accepts available projects ("ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c") and filepath to cellosaurus file (if repo was cloned, should be at data/problematic_celllines.csv) and pulls RSE's, fixes mislabels, calculates TPM, and saves whole RSE's as .rds files in 'rse' folder and csv's for TPM and raw counts matrices in 'tpm' and 'raw_counts' folders, respectively
+
+
 
 running gtex with parallelized sub-function of rec3_rse_download(), called getgtex
 ```{r}
@@ -37,10 +42,11 @@ startTime <- Sys.time()
 t <- getgtexrse(savefilepath = "../data/recount3/")
 endTime <- Sys.time()
 print(endTime - startTime)
-#tempraw <- saveraw(savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/raw_counts/gtex_rawcounts.csv")
+getRawCounts(project = "gtex", savefilepath = "../data/recount3/test/") %>% write.csv(file = "../data/recount3/test/raw_counts/gtex_rawcounts.csv")
 
-#savetpm(savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/tpm/gtex_tpm.csv")
+savetpm(savefilepath = "../data/recount3/test/") %>% write.csv(file = "../data/recount3/test/tpm/gtex_tpm.csv")
 
+getTPM(project = "gtex", savefilepath = "../data/recount3/test/") %>% write.csv(file = "../data/recount3/test/tpm/gtex_tpm.csv")
 
 stopCluster(cl)
 ```
@@ -60,4 +66,39 @@ read back in tpm and raw counts
 #print(endTime - startTime)
                       
 ```
+
+running tcga with parallelized sub-function of rec3_rse_download(), called getgtex
+```{r}
+cl <- makeCluster(4)
+registerDoParallel(cl, cores = 4)
+
+startTime <- Sys.time()
+t <- getTCGArse(savefilepath = "../data/recount3/test/")
+endTime <- Sys.time()
+print(endTime - startTime)
+
+#reading in, splitting, and saving ###need to make these work with other projects
+startTime <- Sys.time()
+#getRawCounts(project = "tcga", savefilepath = "../data/recount3/test/") %>% write.csv(file = "../data/recount3/raw_counts/tcga_rawcounts.csv")
+
+getTPM(project = "tcga", savefilepath = "../data/recount3/test/") %>% write.csv(file = "../data/recount3/tpm/tcga_tpm.csv")
+endTime <- Sys.time()
+print(endTime - startTime)
+
+stopCluster(cl)
+
+
+```
+
+running getSRAproj function for non-TCGA/GTEx projects
+```{r}
+startTime <- Sys.time()
+t <- getSRAproj(project = "bone_c", savefilepath = "../data/recount3/test/")
+
+
+endTime <- Sys.time()
+print(endTime - startTime)
+
+```
+
 
