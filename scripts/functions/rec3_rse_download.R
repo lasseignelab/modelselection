@@ -24,6 +24,44 @@ getSRAproj <- function(project, cellosaurusfilepath, savefilepath){
     annotation = "gencode_v26",
     type = "gene"
   )
+  #most SRA-derived projects have attributes condensed -- need to be expanded
+  if(project != "hpa_c"){
+    rse <- expand_sra_attributes(rse)
+  }
+  
+  # quick fix of HPA metadata mislabeling
+  if (project == "hpa_c"){
+    rse@colData@listData[["sra.sample_name"]][19] <- "PC3_b"
+    rse@colData@listData[["sra.sample_name"]][20] <- "RT-4_a"
+  }
+  
+  if (project == "ccle"){
+    # missing most of its labeling metadata, including cell line of origin
+    problematic_celllines <- read_csv(cellosaurusfilepath, col_names = FALSE)
+    rse <- rse[,!rse@colData@listData[["sra_attribute.cell_line"]] %in% problematic_celllines$X2]
+    # need to remove some parentheses in some that cause problems down the line
+    rse[,grep("SRR8615298", colnames(rse))]@colData@listData[["sra_attribute.cell_line"]] <- "PE/CA-PJ41 clone D2"
+    rse[,grep("SRR8615299", colnames(rse))]@colData@listData[["sra_attribute.cell_line"]] <- "PE/CA-PJ34 clone C12"
+    rse[,grep("SRR8615493", colnames(rse))]@colData@listData[["sra_attribute.cell_line"]] <- "Ishikawa Heraklio 02 ER-"
+    rse[,grep("SRR8615501", colnames(rse))]@colData@listData[["sra_attribute.cell_line"]] <- "SK-N-BE2"
+    rse[,grep("SRR8615785", colnames(rse))]@colData@listData[["sra_attribute.cell_line"]] <- "Hs 688A.T"
+    # missing most of its labeling metadata, including cell line of origin
+    rse <- rse[,grep("SRR8615727", colnames(rse), invert = TRUE)]
+  }
+  
+  if(project == "bone_t"){
+    rse <- rse[,grep("osteosarcoma", rse@colData@listData[["sra_attribute.source_name"]])]
+  } 
+  if(project == "bone_n"){
+    rse <- rse[,grep("normal bone", rse@colData@listData[["sra_attribute.source_name"]])]
+  } 
+  if(project == "bone_c"){
+    rse <- rse[,grep("osteosarcoma|normal bone", rse@colData@listData[["sra_attribute.source_name"]], invert = TRUE)]
+  }
+  
+  if (project == "pdx"){
+    rse <- rse[,grep("IDH-mutant", rse@colData@listData[["sra_attribute.isolate"]], invert = TRUE)]
+  }
   
   #calculate TPM
   assay(rse, "counts") <- recount3::transform_counts(rse)
@@ -38,6 +76,8 @@ getSRAproj <- function(project, cellosaurusfilepath, savefilepath){
   
   return(rse)
 }
+
+
 
 
 ########TCGA FUNCTIONS
@@ -117,6 +157,7 @@ getGTEXrse <- function(project = "gtex"){
       
     )
     require(recount3)
+    rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
     assay(rse, "counts") <- recount3::transform_counts(rse)
     assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
     
