@@ -12,13 +12,63 @@ output: html_document
 library(recount)
 library(recount3)
 library(readr)
-source("../scripts/functions/rec3_rse_download.R") # change to where you have this function script saved
+source("functions/rec3_rse_download.R") # change to where you have this function script saved
+library(foreach)
+library(doParallel)
+library(bigmemory)
+library(tidyverse)
 ```
 
 # utilize function in rec3_rse_download.R
 ## NOTE: prerequisite is cellosaurus problematic cell line list that is available in this directory's /data folder, adjust cellosaurusfilepath and savefilepath accordingly 
 ```{r function run, message=FALSE, warning=FALSE}
-for(i in c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c")){
- rec3_rse_download(project = i, cellosaurusfilepath = "../data/problematic_celllines.csv", savefilepath = "../data/recount3/") # will place full rse (with calc TPM), rawcounts, and tpm objects in destination folder
-}
+#for(i in c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c")){
+# rec3_rse_download(project = i, cellosaurusfilepath = "data/problematic_celllines.csv", savefilepath = "data/recount3/") # will place full rse (with calc TPM), rawcounts, and tpm objects in destination folder
+#}
 ```
+
+## All non-TCGA/GTEx Studies
+getSRAproj function accepts available projects ("ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c") and filepath to cellosaurus file (if repo was cloned, should be at data/problematic_celllines.csv) and pulls RSE's, fixes mislabels, calculates TPM, and saves whole RSE's as .rds files in 'rse' folder and csv's for TPM and raw counts matrices in 'tpm' and 'raw_counts' folders, respectively
+```{r}
+startTime <- Sys.time()
+
+for(i in c("ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c")){
+ getSRAproj(project = i, cellosaurusfilepath = "../data/problematic_celllines.csv", savefilepath = "../data/recount3/") # will place full rse (with calc TPM), rawcounts, and tpm objects in destination folder
+
+}
+endTime <- Sys.time()
+print(endTime - startTime) # Time difference of 5.324986 mins
+
+getSRAproj(project = "bone_t", cellosaurusfilepath = "../data/problematic_celllines.csv", savefilepath = "../data/test/") 
+```
+
+## TCGA/GTEx Studies
+Due to large project sizes and sub-projects by tissue for TCGA and GTEx: getTCGArse() and getGTEXrse() are used to pull RSE's, run TPM calculation, and save whole RSE's as .rds files in 'rse' folder while running in parallel. Then getRawCounts() and getTPM() are used to run in parallel pulling in each RSE for GTEx and TCGA and then bind TPM and raw counts matrices and save them as csv's in 'tpm' and 'raw_counts' folders, respectively
+
+```{r}
+cl <- makeCluster(4)
+registerDoParallel(cl, cores = 4)
+
+startTime <- Sys.time()
+
+#GTEx
+getGTEXrse(savefilepath = "../data/recount3/")
+getRawCounts(project = "gtex", savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/raw_counts/gtex_rawcounts.csv")
+getTPM(project = "gtex", savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/tpm/gtex_tpm.csv")
+
+endTime <- Sys.time()
+print(endTime - startTime) # Time difference of 1.00549 hours
+gc()
+
+#TCGA
+startTime <- Sys.time()
+
+getTCGArse(savefilepath = "../data/recount3/")
+getRawCounts(project = "tcga", savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/raw_counts/tcga_rawcounts.csv")
+getTPM(project = "tcga", savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/tpm/tcga_tpm.csv")
+
+endTime <- Sys.time()
+print(endTime - startTime) # Time difference of 29.60129 mins
+stopCluster(cl) 
+```
+
