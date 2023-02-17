@@ -56,7 +56,8 @@ getRawCounts(project = "gtex", savefilepath = "../data/recount3/") %>% write.csv
 getTPM(project = "gtex", savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/tpm/gtex_tpm.csv")
 
 endTime <- Sys.time()
-print(endTime - startTime)
+print(endTime - startTime) # Time difference of 1.00549 hours
+gc()
 
 #TCGA
 startTime <- Sys.time()
@@ -66,58 +67,7 @@ getRawCounts(project = "tcga", savefilepath = "../data/recount3/") %>% write.csv
 getTPM(project = "tcga", savefilepath = "../data/recount3/") %>% write.csv(file = "../data/recount3/tpm/tcga_tpm.csv")
 
 endTime <- Sys.time()
-print(endTime - startTime)
-stopCluster(cl)
+print(endTime - startTime) # Time difference of 29.60129 mins
+stopCluster(cl) 
 ```
-
-read back in tpm and raw counts
-```{r}
-#fls <- list.files("../data/recount3/test/tpm", pattern = "*gtex_tpm.csv", full.names = TRUE)
-#rsefiles <- Sys.glob(paste0("../data/recount3/test/tpm/*gtex_tpm.csv")) 
-
-#startTime <- Sys.time()
-#result_list <- sapply(rsefiles, function(x) get(eval(read.csv(x))))
-
-#fls <- list.files("../data/recount3/tpm", pattern = "*gtex_tpm.csv", full.names = TRUE) %>% 
-#  lapply(read_csv) %>% #bind_cols
-#  reduce(full_join, by = "...1") #Error: vector memory exhausted (limit reached?) when running all gtex
-#endTime <- Sys.time()
-#print(endTime - startTime)
-                      
-```
-
-running tcga with parallelized sub-function of rec3_rse_download(), called getgtex
-```{r}
-cl <- makeCluster(4)
-registerDoParallel(cl, cores = 4)
-
-startTime <- Sys.time()
-t <- getTCGArse(savefilepath = "../data/recount3/test/")
-endTime <- Sys.time()
-print(endTime - startTime)
-
-#reading in, splitting, and saving ###need to make these work with other projects
-startTime <- Sys.time()
-getRawCounts(project = "tcga", savefilepath = "../data/recount3/test/") %>% write.csv(file = "../data/recount3/raw_counts/tcga_rawcounts.csv")
-
-getTPM(project = "tcga", savefilepath = "../data/recount3/test/") %>% write.csv(file = "../data/recount3/tpm/tcga_tpm.csv")
-endTime <- Sys.time()
-print(endTime - startTime)
-
-stopCluster(cl)
-
-
-```
-
-running getSRAproj function for non-TCGA/GTEx projects
-```{r}
-startTime <- Sys.time()
-t <- getSRAproj(project = "bone_t", cellosaurusfilepath = "../data/problematic_celllines.csv", savefilepath = "../data/recount3/test/")
-
-
-endTime <- Sys.time()
-print(endTime - startTime)
-
-```
-
 

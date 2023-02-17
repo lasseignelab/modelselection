@@ -1,3 +1,4 @@
+########OTHER SRA FUNCTION
 getSRAproj <- function(project, cellosaurusfilepath, savefilepath){
   
   proj_home <- "data_sources/sra"
@@ -80,7 +81,7 @@ getSRAproj <- function(project, cellosaurusfilepath, savefilepath){
 
 
 
-########TCGA FUNCTIONS
+########TCGA FUNCTION
 getTCGArse <- function(project = "tcga", savefilepath){
   proj_home <- "data_sources/tcga"
   #in recount3, TCGA is split up by tissue for projects
@@ -109,12 +110,37 @@ getTCGArse <- function(project = "tcga", savefilepath){
 }
 
 
-########GTEX FUNCTIONS
-getgtex <- function(project = "gtex", savefilepath){
-  rse <- getgtexrse()
-  saverse(rse, savefilepath)
+########GTEX FUNCTION
+getGTEXrse <- function(project = "gtex", savefilepath){
+  proj_home <- "data_sources/gtex"
+  #in recount3, GTEx is split up by tissue for projects
+  proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "BONE_MARROW", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
+  #proj <- c("BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE") #subset for testing
+  
+  foreach(i = 1:length(proj)) %dopar% {
+    #temp_rse_list[[paste(i)]] <- recount3::create_rse_manual(
+    rse <- recount3::create_rse_manual(
+      project = proj[i],
+      project_home = proj_home,
+      organism = "human",
+      annotation = "gencode_v26",
+      type = "gene"
+      
+    )
+    require(recount3)
+    rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
+    assay(rse, "counts") <- recount3::transform_counts(rse)
+    assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
+    
+    saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
+    return(rse)
+  }
+  
 }
 
+
+
+########TPM/RAW_COUNTS FUNCTION
 getRawCounts <- function(project, savefilepath){
   rsefiles <- Sys.glob(paste0(savefilepath, "rse/*_", project, "_rse.rds")) #, paste(proj[i]), "_gtex_rse.rds", sep = "")
   print(rsefiles)
@@ -140,34 +166,9 @@ getTPM <- function(project, savefilepath){
 
 }
 
-getGTEXrse <- function(project = "gtex"){
-  proj_home <- "data_sources/gtex"
-  #in recount3, GTEx is split up by tissue for projects
-  #proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "BONE_MARROW", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
-  proj <- c("BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE") #subset for testing
-  
-  foreach(i = 1:length(proj)) %dopar% {
-    #temp_rse_list[[paste(i)]] <- recount3::create_rse_manual(
-    rse <- recount3::create_rse_manual(
-      project = proj[i],
-      project_home = proj_home,
-      organism = "human",
-      annotation = "gencode_v26",
-      type = "gene"
-      
-    )
-    require(recount3)
-    rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
-    assay(rse, "counts") <- recount3::transform_counts(rse)
-    assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
-    
-    saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
-    return(rse)
-  }
-  
-}
 
 
+######## PREVIOUS FUNCTION
 rec3_rse_download <- function(project = c("tcga", "gtex", "ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c"), cellosaurusfilepath, savefilepath){
   # creating a function to specify one of tcga, ccle, pdx, hpa, or gtex and download rse loaded with TPM
   # built to remove/rename specific problematic samples consistently
