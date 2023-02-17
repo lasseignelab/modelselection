@@ -38,7 +38,7 @@ for(i in c("ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c")){
 endTime <- Sys.time()
 print(endTime - startTime) # Time difference of 5.324986 mins
 
-
+getSRAproj(project = "bone_t", cellosaurusfilepath = "../data/problematic_celllines.csv", savefilepath = "../data/test/") 
 ```
 
 ## TCGA/GTEx Studies
