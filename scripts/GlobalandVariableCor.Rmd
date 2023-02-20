@@ -50,6 +50,16 @@ pdx_samples <- pdx_samples[pdx_samples %in% brain_samples]
 fullcor_gbm_pdx <- fullcor_brain[, colnames(fullcor_brain) %in% pdx_samples]
 ```
 
+# read in TPM
+```{r read tpm}
+ccle_tpm <- readRDS("../data/rse_subsets/63856/tpm/ccle_tpm.rds")
+hpa_c_tpm <- readRDS("../data/rse_subsets/63856/tpm/hpa_c_tpm.rds")
+tcga_tpm <- readRDS("../data/rse_subsets/63856/tpm/tcga_tpm.rds")
+gtex_tpm <- readRDS("../data/rse_subsets/63856/tpm/gtex_tpm.rds")
+hpa_t_tpm <- readRDS("../data/rse_subsets/63856/tpm/hpa_t_tpm.rds")
+pdx_tpm <- readRDS("../data/rse_subsets/63856/tpm/pdx_tpm.rds")
+```
+
 # PCA
 ```{r pca}
 library(ggplot2)
@@ -124,7 +134,7 @@ brain_fact_cohort <- factor(brain_meta_sub)
 ## by just origin type
 colorset <- rainbow(4)
 #png("../plots/pca_origintype.png")
-Scatter_Density(object = all_pca, batch = brain_fact_origin, color.set = colorset, batch.legend.title = "Origin Type")
+Scatter_Density(object = all_pca, batch = brain_fact_origin, color.set = colorset, batch.legend.title = "Origin Type", legend.cex = 1.5, legend.title.cex = 1.6, title.cex = 1.6)
 #dev.off() # NOTE: for some reason with png() the image quality is always bad, even when I scale up dimensions. Better off generating plot in R script then >  image
 
 # by data source
@@ -238,9 +248,12 @@ bccor_tissub <- colMedians(bccor)
 hm_rm <- data.frame(GBM_Tissue = gbmcor_tissub, Brain_Tum_Tissue = btcor_tissub, Brain_Control_Tissue = bccor_tissub)
 rownames(hm_rm) <- colnames(gbmcor)
 
+# annotation colors
+ann_colors <- list(Model = c('Cell Line' = "#ff9288", PDX = "#01dae0"))
+
 ## hm time
-png("../plots/hm_brainsubs.png", width = 700, height = 900)
-pheatmap(hm_rm, annotation_row = annotation_col, fontsize_row = 5, angle_col = 45, labels_col = c("GBM Tumor Tissue", "All Brain Tumor Tissue", "Brain Control Tissue"), color = colorRampPalette(c("yellow", "red"))(200))
+png("../plots/hm_brainsubs.png", width = 900, height = 1100)
+pheatmap(hm_rm, annotation_row = annotation_col, show_rownames = F, angle_col = 45, fontsize = 23, labels_col = c("GBM Tumor Tissue", "All Brain Tumor Tissue", "Brain Control Tissue"), color = colorRampPalette(c("yellow", "red"))(200), annotation_colors = ann_colors)
 dev.off()
 ```
 
@@ -267,16 +280,19 @@ rownames(cl_pdx_violin) <- clsub_pdx_samples
 
 library(ggplot2)
 # Basic violin plot
-con_violin <- ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Each Brain-Derived Model Sample to Brain Control Tissue")
-con_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Each Brain-Derived Model Sample to Brain Control Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
+ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model to Brain Control Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 15))
+ggsave(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_con.png", width = 5, height = 6)
 
-tum_violin <- ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Each Brain-Derived Model Sample to Brain Tumor Tissue")
+con_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model Sample to Brain Control Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
+
+ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 15))
+ggsave(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_tum.png", width = 5, height = 6)
 
 tum_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Each Brain-Derived Model Sample to Brain Tumor Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model Sample to Brain Tumor Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
 ```
 
 # Wilcoxon rank sum test on these two groups
@@ -304,8 +320,8 @@ tum_violin +
 tum_violin_alt + 
   stat_pvalue_manual(stat.test, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test, detailed = TRUE))
-gg(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_tum.png", 
-          width = 5, height = 6)
+#gg(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_tum.png", 
+          #width = 5, height = 6)
 
 # again for control
 # computation - tumor
@@ -328,8 +344,8 @@ con_violin +
 con_violin_alt + 
   stat_pvalue_manual(stat.test, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test, detailed = TRUE))
-gg(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_con.png", 
-          width = 5, height = 6)
+#gg(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_con.png", 
+          #width = 5, height = 6)
 ```
 
 # violin plot how the two groups each recapitulated across tissue types
@@ -419,13 +435,13 @@ source("../scripts/functions/geom_split_violin.R")
 ```
 
 ```{r plot}
-ggplot(cor_dismatch_cantis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain-Derived Model Sample to Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1))
+ggplot(cor_dismatch_cantis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Tumor Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/vio_braincltoeachtum.png", 
-          width = 13, height = 7)
+          width = 18, height = 7)
 
-ggplot(cor_dismatch_contis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of Each Brain-Derived Model Sample to Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1))
+ggplot(cor_dismatch_contis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Control Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/vio_braincltoeachcon.png", 
-          width = 13, height = 7)
+          width = 18, height = 7)
 ```
 
 # Wilcoxon rank sum test between models for each tissue

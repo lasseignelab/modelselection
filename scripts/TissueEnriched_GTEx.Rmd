@@ -7,7 +7,7 @@ gtex_down_tissue_genes <- qusage::read.gmt("../data/gene_set_library_dn_crisp.gm
 sample_master_meta <- readRDS("../data/sample_master_meta.rds")
 ```
 
-## I need ens IDs for these genes
+# I need ens IDs for these genes
 ```{r adding ens IDs}
 library(AnnotationDbi)
 library(org.Hs.eg.db)
@@ -34,7 +34,6 @@ for(i in names(gtex_up_tissue_genes)){ # up and down have the same name set
 rm(out, i)
 rm(gtex_down_tissue_genes, gtex_up_tissue_genes) # optional
 ```
-
 # next, subset this nested list to only the cell line tissue origins represented
 ```{r list subset}
 cellline_tissues <- unique(sample_master_meta[sample_master_meta$origin == "Cell Line",]$tissue_coerced)
@@ -172,7 +171,7 @@ tis_gene_cor_both_vio_in$Type <- c(rep("Tumor", length(tis_gene_cor_tum_vio_in$c
 tis_gene_cor_both_vio_in <- tis_gene_cor_both_vio_in[tis_gene_cor_both_vio_in$tissue != "Nerve",]
 tis_gene_cor_both_vio_in <- tis_gene_cor_both_vio_in[tis_gene_cor_both_vio_in$tissue != "Salivary Gland",]
 
-ggplot(tis_gene_cor_both_vio_in, aes(tissue, corres, fill = Type)) + geom_split_violin(width = 1) + labs(x = "Tissue of Origin", y = "Median Correlation Between Matched Cell Lines and Tissues") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_manual(values = c("darkblue", "orange")) + labs(fill = "Tissue Type")
+ggplot(tis_gene_cor_both_vio_in, aes(tissue, corres, fill = Type)) + geom_split_violin(width = 1) + labs(x = "Tissue of Origin", y = "Median Correlation Between Matched Cell Lines and Tissues") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_manual(values = c("darkblue", "orange")) + labs(fill = "Tissue Type") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/tags_violin/allcltomatchboth.png", 
           width = 13, height = 7, units = "in")
 ```
@@ -344,11 +343,13 @@ tis_gene_cor_pdxcl_con_vio_in$type[tis_gene_cor_pdxcl_con_vio_in$type == "CL"] <
 #### next, generate plots
 ```{r generate violin plot}
 library(ggplot2)
-tis_gene_cor_pdxcl_tum_v_plot <- ggplot(tis_gene_cor_pdxcl_tum_vio_in, aes(x=type, y=corres, color=type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Brain Model to Brain Tumor Tissue in Brain TAGs") + ylim(0.5,0.9) + guides(color = "none")
+=ggplot(tis_gene_cor_pdxcl_tum_vio_in, aes(x=type, y=corres, color=type)) + geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue in Brain TAGs") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15))
+ggsave(filename = "../plots/tags_violin/brainclpdxtomatchtum.png", 
+          width = 5, height = 6)
 
-tis_gene_cor_pdxcl_con_v_plot <- ggplot(tis_gene_cor_pdxcl_con_vio_in, aes(x=type, y=corres, color=type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Brain Model to Brain Control Tissue in Brain TAGs") + ylim(0.5,0.9) + guides(color = "none")
+ggplot(tis_gene_cor_pdxcl_con_vio_in, aes(x=type, y=corres, color=type)) + geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Control Tissue in Brain TAGs") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15))
+ggsave(filename = "../plots/tags_violin/brainclpdxtomatchcon.png", 
+          width = 5, height = 6)
 ```
 
 #### Wilcoxon rank sum test on these two groups
@@ -376,7 +377,7 @@ stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
 tis_gene_cor_pdxcl_tum_v_plot + 
   stat_pvalue_manual(stat.test_tag, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
-ggsave(filename = "../plots/tags_violin/brainclpdxtomatchtum.png", 
+#ggsave(filename = "../plots/tags_violin/brainclpdxtomatchtum.png", 
           width = 5, height = 6)
 
 # computation - control
@@ -395,7 +396,7 @@ stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
 tis_gene_cor_pdxcl_con_v_plot + 
   stat_pvalue_manual(stat.test_tag, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
-ggsave(filename = "../plots/tags_violin/brainclpdxtomatchcon.png", 
+#ggsave(filename = "../plots/tags_violin/brainclpdxtomatchcon.png", 
           width = 5, height = 6)
 ```
 
