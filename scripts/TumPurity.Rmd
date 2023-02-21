@@ -11,12 +11,7 @@ date: '2022-09-06'
 library(readr)
 library(foreach)
 library(doParallel)
-# For the CRAN version
-#install.packages("bigstatsr")
-# For the latest version
-#remotes::install_github("privefl/bigstatsr")
-library(bigstatsr)
-library(bigreadr)
+library(tibble)
 ```
 
 # purity information from: https://gdc.cancer.gov/about-data/publications/pancanatlas ABSOLUTE purity/ploidy file (220906)
@@ -24,9 +19,12 @@ library(bigreadr)
 
 # load in data from pancanatlas
 ```{r load}
-purity_info_pca <- read.csv("../data/TCGA_mastercalls.abs_tables_JSedit.fixed.csv")
+purity_info_pca <- read.csv("data/TCGA_mastercalls.abs_tables_JSedit.fixed.csv")
+```
 
-rsefiles <- Sys.glob("../data/recount3/rse/*_tcga_rse.rds")
+# load in TCGA RSE's with parallelized for loop
+```{r}
+rsefiles <- Sys.glob("data/recount3/rse/*_tcga_rse.rds")
 
 #setup for running in parallel
 cl <- makeCluster(4)
@@ -38,41 +36,22 @@ tcga_barcode <- foreach(i = 1:length(rsefiles), .combine= c) %dopar% { #run loop
     barcode <- strtrim(rse@colData@listData[["tcga.tcga_barcode"]],15)
 }
 stopCluster(cl) 
-#tcga_barcode <- strtrim(tcga_rse@colData@listData[["tcga.tcga_barcode"]],15)
   
 length(tcga_barcode[tcga_barcode %in% purity_info_pca$array]) # 9759 represented, 336 not
 length(setdiff(tcga_barcode, purity_info_pca$array)) # 9759 represented, 336 not
-
 ```
 
 # find highly tumor purity-associated genes
 ```{r computation}
-#TCGA <- assays(tcga_rse)$TPM
-#colnames(TCGA) <- tcga_barcode
-TCGA <- readr::read_delim("../data/recount3/tpm/tcga_tpm.csv") ##my alt attempt
+#read in TCGA TPM
+TCGA <- readr::read_delim("data/recount3/tpm/tcga_tpm.csv") 
 TCGA <- tibble::column_to_rownames(TCGA, var = "...1")
 colnames(TCGA) <- tcga_barcode
-#library(bigmemory)
-#TCGA <- read.big.matrix(filename = "../data/recount3/tpm/tcga_tpm.csv", sep = ",", type = "integer", header=TRUE) # Error in if (shared) { : the condition has length > 1
-#TCGA <- big_read(file = "../data/recount3/tpm/tcga_tpm.csv", sep = ",", type = "double") 
 
-
+#find TCGA samples with purity information
 TCGA <- TCGA[, intersect(purity_info_pca$array, colnames(TCGA))]
-#tumors_purity <-  purity_info_pca[purity_info_pca$array %in% colnames(TCGA), ]
-
-#small subset of most variable genes for troubleshooting
-#iqr_gene = apply(TCGA, 1, IQR)
-#varying_genes = iqr_gene[order(iqr_gene, decreasing = T)]
-#varying_genes = names(varying_genes[1:50])
-#TCGA <- TCGA[varying_genes, 1:20]
-
-
-##TCGA <- TCGA[which(apply(TCGA, 1, sd)<1),] #remove 0 var genes
-#TCGA <- TCGA[,which(apply(TCGA, 2, sd)<1)] #remove 0 var samples
-gc()
-
 tumors_purity <-  purity_info_pca[purity_info_pca$array %in% colnames(TCGA), ]
-
+gc()
 
 tmp <- lapply(rownames(TCGA), function(x)cor.test(as.numeric(TCGA[x,]),tumors_purity$purity, method = "s", exact = FALSE)) # returned lots of warnings 'Warning in cor.test.default(as.numeric(TCGA[x, ]), tumors_purity$purity,  :
   # Cannot compute exact p-value with ties'
@@ -90,20 +69,9 @@ TCGA <- TCGA[!(rownames(TCGA) %in% purity_genes),]
 
 # save tumor purity-associated genes
 ```{r save}
-#saveRDS(purity_genes, "../data/purity_genes.rds")
-saveRDS(purity_genes, "../data/lw2_purity_genes.rds")
+saveRDS(purity_genes, "data/purity_genes.rds")
 ```
 
-compare outputs
-```{r}
-lw_purity_genes <- purity_genes
-readRDS("../data/purity_genes.rds")
-intersect(lw_purity_genes, purity_genes)
-
-setdiff(lw_purity_genes, purity_genes)
-setdiff(purity_genes, lw_purity_genes)
-
-```
 
 # clean env
 ```{r clean env}
