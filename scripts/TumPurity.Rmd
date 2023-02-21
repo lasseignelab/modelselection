@@ -6,6 +6,19 @@ date: '2022-09-06'
 
 > generating tumor purity info based on TCGA to determine if tumor purity highly influences model performance
 
+# required packages
+```{r}
+library(readr)
+library(foreach)
+library(doParallel)
+# For the CRAN version
+#install.packages("bigstatsr")
+# For the latest version
+#remotes::install_github("privefl/bigstatsr")
+library(bigstatsr)
+library(bigreadr)
+```
+
 # purity information from: https://gdc.cancer.gov/about-data/publications/pancanatlas ABSOLUTE purity/ploidy file (220906)
 # code for computation sourced then adjusted from: https://github.com/katharineyu/TCGA_CCLE_paper/blob/master/R_scripts/tumor_cell_line_cor.R
 
@@ -13,23 +26,58 @@ date: '2022-09-06'
 ```{r load}
 purity_info_pca <- read.csv("../data/TCGA_mastercalls.abs_tables_JSedit.fixed.csv")
 
-tcga_rse <- readRDS("../data/recount3/rse/tcga_rse.rds")
+rsefiles <- Sys.glob("../data/recount3/rse/*_tcga_rse.rds")
 
-tcga_barcode <- strtrim(tcga_rse@colData@listData[["tcga.tcga_barcode"]],15)
+#setup for running in parallel
+cl <- makeCluster(4)
+registerDoParallel(cl, cores = 4)
   
-# test <- setdiff(tcga_barcode, purity_info_pca$array) # 9759 represented, 336 not
+tcga_barcode <- foreach(i = 1:length(rsefiles), .combine= c) %dopar% { #run loops in parallel, outputs a combined list
+    rse <- readRDS(rsefiles[i])
+    #raw <-  rse@assays@data@listData[["raw_counts"]]
+    barcode <- strtrim(rse@colData@listData[["tcga.tcga_barcode"]],15)
+}
+stopCluster(cl) 
+#tcga_barcode <- strtrim(tcga_rse@colData@listData[["tcga.tcga_barcode"]],15)
+  
+length(tcga_barcode[tcga_barcode %in% purity_info_pca$array]) # 9759 represented, 336 not
+length(setdiff(tcga_barcode, purity_info_pca$array)) # 9759 represented, 336 not
+
 ```
 
 # find highly tumor purity-associated genes
 ```{r computation}
-TCGA <- assays(tcga_rse)$TPM
+#TCGA <- assays(tcga_rse)$TPM
+#colnames(TCGA) <- tcga_barcode
+TCGA <- readr::read_delim("../data/recount3/tpm/tcga_tpm.csv") ##my alt attempt
+TCGA <- tibble::column_to_rownames(TCGA, var = "...1")
 colnames(TCGA) <- tcga_barcode
+#library(bigmemory)
+#TCGA <- read.big.matrix(filename = "../data/recount3/tpm/tcga_tpm.csv", sep = ",", type = "integer", header=TRUE) # Error in if (shared) { : the condition has length > 1
+#TCGA <- big_read(file = "../data/recount3/tpm/tcga_tpm.csv", sep = ",", type = "double") 
 
-TCGA <- TCGA[, intersect(purity_info_pca$array, colnames(TCGA))] 
+
+TCGA <- TCGA[, intersect(purity_info_pca$array, colnames(TCGA))]
+#tumors_purity <-  purity_info_pca[purity_info_pca$array %in% colnames(TCGA), ]
+
+#small subset of most variable genes for troubleshooting
+#iqr_gene = apply(TCGA, 1, IQR)
+#varying_genes = iqr_gene[order(iqr_gene, decreasing = T)]
+#varying_genes = names(varying_genes[1:50])
+#TCGA <- TCGA[varying_genes, 1:20]
+
+
+##TCGA <- TCGA[which(apply(TCGA, 1, sd)<1),] #remove 0 var genes
+#TCGA <- TCGA[,which(apply(TCGA, 2, sd)<1)] #remove 0 var samples
+gc()
+
 tumors_purity <-  purity_info_pca[purity_info_pca$array %in% colnames(TCGA), ]
+
+
 tmp <- lapply(rownames(TCGA), function(x)cor.test(as.numeric(TCGA[x,]),tumors_purity$purity, method = "s", exact = FALSE)) # returned lots of warnings 'Warning in cor.test.default(as.numeric(TCGA[x, ]), tumors_purity$purity,  :
   # Cannot compute exact p-value with ties'
 # to overcome warnings, use exact = FALSE:  https://www.tutorialspoint.com/how-to-avoid-the-warning-cannot-compute-exact-p-value-with-ties-while-perform-correlation-test-for-spearman-s-correlation-in-r#:~:text=Since%20the%20spearman%20correlation%20coefficient,test%20function.
+gc()
 
 tmp.df <- data.frame(sapply(tmp,function(x)x$p.value), sapply(tmp,function(x)x$estimate))
 rownames(tmp.df) <- rownames(TCGA)
@@ -42,7 +90,19 @@ TCGA <- TCGA[!(rownames(TCGA) %in% purity_genes),]
 
 # save tumor purity-associated genes
 ```{r save}
-saveRDS(purity_genes, "../data/purity_genes.rds")
+#saveRDS(purity_genes, "../data/purity_genes.rds")
+saveRDS(purity_genes, "../data/lw2_purity_genes.rds")
+```
+
+compare outputs
+```{r}
+lw_purity_genes <- purity_genes
+readRDS("../data/purity_genes.rds")
+intersect(lw_purity_genes, purity_genes)
+
+setdiff(lw_purity_genes, purity_genes)
+setdiff(purity_genes, lw_purity_genes)
+
 ```
 
 # clean env
