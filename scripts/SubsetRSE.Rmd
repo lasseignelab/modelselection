@@ -7,6 +7,12 @@ date: '2022-08-10'
 > script to generate subset RSEs from a full RSE based on nuumber of most variable genes to include, whether variation is based on TCGA or GTEx, and whether to exclude purity genes
 
 # Prerequisites: objects with GTEx and TCGA TPM and all RSE objects, which are exported in the DataDownload script, rse_to_subset.R function script
+```{r}
+tcga_tpm  <- readr::read_delim("../data/recount3/tpm/tcga_tpm.csv")
+gtex_tpm  <- readr::read_delim("../data/recount3/tpm/gtex_tpm.csv")
+
+```
+
 ```{r source load}
 source("../scripts/functions/rse_to_subset.R") # change to where you have this function script saved
 ```
@@ -46,6 +52,14 @@ for(i in project){
   }
 }
 ```
+
+LIZZY SCRATCH
+```{r}
+#subsetfolders("../data/", subset_num)
+
+
+```
+
 
 # clean environment
 ```{r clean environment}

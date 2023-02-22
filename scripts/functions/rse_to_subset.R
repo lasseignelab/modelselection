@@ -1,3 +1,33 @@
+#### function to create needed folders
+subsetfolders <- function(savefilepath, subset_num){
+  if(!dir.exists(paste0(savefilepath, "rse_subsets/")) == TRUE){
+    dir.create(paste0(savefilepath, "rse_subsets/"))  
+  }
+  for(i in 1:length(subset_num)){
+    if(!dir.exists(paste0(savefilepath, "rse_subsets/", subset_num[i])) == TRUE){
+      dir.create(paste0(savefilepath, "rse_subsets/", subset_num[i]))  
+    }
+    purity <- c("purinc", "purexc")
+    for(j in 1:length(purity)){
+      if(!dir.exists(paste0(savefilepath, "rse_subsets/", subset_num[i], "/", purity[j])) == TRUE){
+        dir.create(paste0(savefilepath, "rse_subsets/", subset_num[i], "/", purity[j]))
+      }
+      vartypes <- c("tcgavar", "gtexvar")
+      for(k in 1:length(vartypes)){
+        if(!dir.exists(paste0(savefilepath, "rse_subsets/", subset_num[i], "/", purity[j], "/", vartypes[k])) == TRUE){
+          dir.create(paste0(savefilepath, "rse_subsets/", subset_num[i], "/", purity[j], "/", vartypes[k]))
+        }
+        filetype <- c("rse", "tpm")
+        for(l in 1:length(filetype)){
+          if(!dir.exists(paste0(savefilepath, "rse_subsets/", subset_num[i], "/", purity[j], "/", vartypes[k], "/", filetype[l])) == TRUE){
+            dir.create(paste0(savefilepath, "rse_subsets/", subset_num[i], "/", purity[j], "/", vartypes[k],  "/", filetype[l]))
+          }
+        }
+      }
+    }
+  }
+}
+
 rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, saveRSE, saveTPM, savefilepath){
   # rse is the full input rse to be subsetted
   # project is a character string of how to name the new object
@@ -8,7 +38,7 @@ rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, save
   # save is TRUE/FALSE, whether to save resultant object to RDS
   
   #check if necessary folders exist, and create them if they don't
-  #ifelse(!dir.exists(file.path(paste(savefilepath, subset_num, "/purinc/tcgavar/rse/"), subDir)), dir.create(file.path(mainDir, subDir)), FALSE)
+  subsetfolders(savefilepath, subset_num)
   
   if(var_source == "tcga"){
     varying_genes <- tcga_varying_genes
