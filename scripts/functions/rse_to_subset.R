@@ -28,7 +28,7 @@ subsetfolders <- function(savefilepath, subset_num){
   }
 }
 
-rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, saveRSE, saveTPM, savefilepath){
+rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, typeinput, savefilepath){
   # rse is the full input rse to be subsetted
   # project is a character string of how to name the new object
   # subset_num is a numeric of how many of the most variable genes to subset to
@@ -52,18 +52,20 @@ rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, save
     output <- rse[rownames(rse) %in% varying_genes,]
     
     
-    if(saveRSE == TRUE){
+    if(typeinput == "both"){
       if(var_source == "tcga"){
-        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, subset_num, "/purinc/tcgavar/rse/", project, "_rse", "_sub", subset_num, "_purinc_tcgavar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, "rse_subsets/", subset_num, "/purinc/tcgavar/rse/", project, "_rse", "_sub", subset_num, "_purinc_tcgavar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, "rse_subsets/", subset_num, "/purinc/tcgavar/tpm/", project, "_tpm", "_sub", subset_num, "_purinc_tcgavar.rds", sep = ""))
       } else if(var_source == "gtex"){
-        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, subset_num, "/purinc/gtexvar/rse/", project, "_rse", "_sub", subset_num, "_purinc_gtexvar.rds", sep = ""))
-        }
+        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, "rse_subsets/", subset_num, "/purinc/gtexvar/rse/", project, "_rse", "_sub", subset_num, "_purinc_gtexvar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, "rse_subsets/", subset_num, "/purinc/gtexvar/tpm/", project, "_tpm", "_sub", subset_num, "_purinc_gtexvar.rds", sep = ""))
+      }
     }
-    if(saveTPM == TRUE){
+    if(typeinput == "TPM"){
       if(var_source == "tcga"){
-        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, subset_num, "/purinc/tcgavar/tpm/", project, "_tpm", "_sub", subset_num, "_purinc_tcgavar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, "rse_subsets/", subset_num, "/purinc/tcgavar/tpm/", project, "_tpm", "_sub", subset_num, "_purinc_tcgavar.rds", sep = ""))
       } else if(var_source == "gtex"){
-        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, subset_num, "/purinc/gtexvar/tpm/", project, "_tpm", "_sub", subset_num, "_purinc_gtexvar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, "rse_subsets/", subset_num, "/purinc/gtexvar/tpm/", project, "_tpm", "_sub", subset_num, "_purinc_gtexvar.rds", sep = ""))
       }
     }
     
@@ -74,18 +76,20 @@ rse_to_subset <- function(rse, project, subset_num, var_source, purity_inc, save
     
     output <-  rse[rownames(rse) %in% varying_genes,]
     
-    if(saveRSE == TRUE){
+    if(typeinput == "both"){
       if(var_source == "tcga"){
-        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, subset_num, "/purexc/tcgavar/rse/", project, "_rse", "_sub", subset_num, "_purexc_tcgavar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, "rse_subsets/", subset_num, "/purexc/tcgavar/rse/", project, "_rse", "_sub", subset_num, "_purexc_tcgavar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, "rse_subsets/", subset_num, "/purexc/tcgavar/tpm/", project, "_tpm", "_sub", subset_num, "_purexc_tcgavar.rds", sep = ""))
       } else if(var_source == "gtex"){
-        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, subset_num, "/purexc/gtexvar/rse/", project, "_rse", "_sub", subset_num, "_purexc_gtexvar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, "rse_subsets/", subset_num, "/purexc/gtexvar/rse/", project, "_rse", "_sub", subset_num, "_purexc_gtexvar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, "rse_subsets/", subset_num, "/purexc/gtexvar/tpm/", project, "_tpm", "_sub", subset_num, "_purexc_gtexvar.rds", sep = ""))
       }
     }
-    if(saveTPM == TRUE){
+    if(typeinput == "TPM"){
       if(var_source == "tcga"){
-        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, subset_num, "/purexc/tcgavar/tpm/", project, "_tpm", "_sub", subset_num, "_purexc_tcgavar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, "rse_subsets/", subset_num, "/purexc/tcgavar/tpm/", project, "_tpm", "_sub", subset_num, "_purexc_tcgavar.rds", sep = ""))
       } else if(var_source == "gtex"){
-        saveRDS(rse[rownames(rse) %in% varying_genes,]@assays@data@listData[["TPM"]], paste(savefilepath, subset_num, "/purexc/gtexvar/tpm/", project, "_tpm", "_sub", subset_num, "_purexc_gtexvar.rds", sep = ""))
+        saveRDS(rse[rownames(rse) %in% varying_genes,], paste(savefilepath, "rse_subsets/", subset_num, "/purexc/gtexvar/tpm/", project, "_tpm", "_sub", subset_num, "_purexc_gtexvar.rds", sep = ""))
       }
     }
   }
