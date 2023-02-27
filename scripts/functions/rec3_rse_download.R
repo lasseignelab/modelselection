@@ -3,6 +3,12 @@ checkfolders <- function(savefilepath){
   if(!dir.exists(paste0(savefilepath, "rse")) == TRUE){
     dir.create(paste0(savefilepath, "rse"))  
   }
+  if(!dir.exists(paste0(savefilepath, "rse/tcga_tissue")) == TRUE){
+    dir.create(paste0(savefilepath, "rse/tcga_tissue"))  
+  }
+  if(!dir.exists(paste0(savefilepath, "rse/gtex_tissue")) == TRUE){
+    dir.create(paste0(savefilepath, "rse/gtex_tissue"))
+  }
   if(!dir.exists(paste0(savefilepath, "tpm")) == TRUE){
     dir.create(paste0(savefilepath, "tpm"))  
   }
@@ -105,7 +111,7 @@ getTCGArse <- function(project = "tcga", savefilepath){
   proj_home <- "data_sources/tcga" #project home for recount3
   #in recount3, TCGA is split up by tissue for projects
   proj <- c("BRCA","KIRC","LUAD","UCEC","THCA","PRAD","LUSC","HNSC","COAD","LGG","SKCM","LAML", "STAD","BLCA","OV","LIHC","KIRP","CESC","SARC","ESCA","PCPG","PAAD","READ","GBM","TGCT","THYM","KICH","MESO","UVM","ACC","UCS","DLBC","CHOL")
-  #proj <- c("ACC","UCS","DLBC","CHOL") #subset for testing
+  #proj <- c("ACC","UCS","DLBC") #subset for testing
   
   foreach(i = 1:length(proj), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
     rse <- recount3::create_rse_manual(
@@ -118,12 +124,12 @@ getTCGArse <- function(project = "tcga", savefilepath){
     )
     
     rse <- rse[,grep("Primary", rse@colData@listData[["tcga.cgc_sample_sample_type"]])]
-    require(recount3)
+    #require(recount3)
     assay(rse, "counts") <- recount3::transform_counts(rse)
     assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
     
-    saveRDS(rse, paste(savefilepath, "rse/", paste(proj[i]), "_tcga_rse.rds", sep = ""))
-    return(rse)
+    saveRDS(rse, paste(savefilepath, "rse/tcga_tissue/", paste(proj[i]), "_tcga_rse.rds", sep = ""))
+    #return(rse)
   }
   
 }
@@ -133,12 +139,13 @@ getTCGArse <- function(project = "tcga", savefilepath){
 getGTEXrse <- function(project = "gtex", savefilepath){
   #check for rse, tpm, and raw_counts folders
   checkfolders(savefilepath)
+  
   proj_home <- "data_sources/gtex"#project home for recount3
   #in recount3, GTEx is split up by tissue for projects
   proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "BONE_MARROW", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
   #proj <- c("BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE") #subset for testing
   
-  foreach(i = 1:length(proj)) %dopar% { #run loops in parallel, outputs a combined list
+  foreach(i = 1:length(proj), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
     rse <- recount3::create_rse_manual(
       project = proj[i],
       project_home = proj_home,
@@ -147,13 +154,13 @@ getGTEXrse <- function(project = "gtex", savefilepath){
       type = "gene"
       
     )
-    require(recount3)
+    #require(recount3)
     rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
     assay(rse, "counts") <- recount3::transform_counts(rse)
     assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
     
-    saveRDS(rse, paste(savefilepath, "rse/", paste(proj[i]), "_gtex_rse.rds", sep = ""))
-    return(rse)
+    saveRDS(rse, paste(savefilepath, "rse/gtex_tissue/", paste(proj[i]), "_gtex_rse.rds", sep = ""))
+    #return(rse)
   }
   
 }
@@ -162,10 +169,10 @@ getGTEXrse <- function(project = "gtex", savefilepath){
 
 ########TPM/RAW_COUNTS FUNCTION
 getRawCounts <- function(project, savefilepath){
-  rsefiles <- Sys.glob(paste0(savefilepath, "rse/*_", project, "_rse.rds")) #, paste(proj[i]), "_gtex_rse.rds", sep = "")
-  print(rsefiles)
+  rsefiles <- Sys.glob(paste0(savefilepath, "*_", project, "_rse.rds")) #, paste(proj[i]), "_gtex_rse.rds", sep = "")
+  #print(rsefiles)
   
-  foreach(i = 1:length(rsefiles), .combine=cbind, .packages = "bigmemory") %dopar% { #run loops in parallel, outputs a combined list
+  foreach(i = 1:length(rsefiles), .combine=cbind) %dopar% { #run loops in parallel, outputs a combined list
     rse <- readRDS(rsefiles[i])
     raw <-  rse@assays@data@listData[["raw_counts"]]
     
@@ -175,10 +182,10 @@ getRawCounts <- function(project, savefilepath){
 
 
 getTPM <- function(project, savefilepath){
-  rsefiles <- Sys.glob(paste0(savefilepath, "rse/*_", project, "_rse.rds")) 
-  print(rsefiles)
+  rsefiles <- Sys.glob(paste0(savefilepath, "*_", project, "_rse.rds")) 
+  #print(rsefiles)
   
-  foreach(i = 1:length(rsefiles), .combine=cbind, .packages = "bigmemory") %dopar% { #run loops in parallel, outputs a combined list
+  foreach(i = 1:length(rsefiles), .combine=cbind) %dopar% { #run loops in parallel, outputs a combined list
     rse <- readRDS(rsefiles[i])
     tpm <-  rse@assays@data@listData[["TPM"]]
     
