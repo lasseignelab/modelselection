@@ -24,7 +24,7 @@ purity_info_pca <- read.csv("data/TCGA_mastercalls.abs_tables_JSedit.fixed.csv")
 
 # load in TCGA RSE's with parallelized for loop
 ```{r}
-rsefiles <- Sys.glob("data/recount3/rse/*_tcga_rse.rds")
+rsefiles <- Sys.glob("data/recount3/rse/tcga_tissue/*_tcga_rse.rds")
 
 #setup for running in parallel
 cl <- makeCluster(4)
