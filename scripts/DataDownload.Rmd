@@ -24,7 +24,7 @@ library(tidyverse)
 # utilize functions in rec3_rse_download.R
 
 ## All non-TCGA/GTEx Studies
-getSRAproj function accepts available projects ("ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c") and filepath to cellosaurus file (if repo was cloned, should be at ../data/problematic_celllines.csv) and pulls RSE's, fixes mislabels, calculates TPM, and saves whole RSE's as .rds files in 'rse' folder and csv's for TPM and raw counts matrices in 'tpm' and 'raw_counts' folders, respectively
+getSRAproj function accepts available projects ("ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c") and filepath to cellosaurus file (if repo was cloned, should be at ../data/problematic_celllines.csv) and pulls RSE's, fixes mislabels, calculates TPM, and saves whole RSE's as .rds files in 'rse' folder and RDS files for TPM and raw counts matrices in 'tpm' and 'raw_counts' folders, respectively
 ```{r}
 startTime <- Sys.time()
 for(i in c("ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c")){
@@ -36,24 +36,25 @@ print(endTime - startTime) # Time difference of 5.324986 mins
 ```
 
 ## TCGA/GTEx Studies
-Due to large project sizes and sub-projects by tissue for TCGA and GTEx: getTCGArse() and getGTEXrse() are used to pull RSE's, run TPM calculation, and save whole RSE's as .rds files in 'rse' folder while running in parallel. Then getRawCounts() and getTPM() are used to run in parallel pulling in each RSE for GTEx and TCGA and then bind TPM and raw counts matrices and save them as csv's in 'tpm' and 'raw_counts' folders, respectively
+Due to large project sizes and sub-projects by tissue for TCGA and GTEx: getTCGArse() and getGTEXrse() are used to pull RSE's, run TPM calculation, and save whole RSE's as .rds files in 'rse' folder while running in parallel. Then getRawCounts() and getTPM() are used to run in parallel pulling in each RSE for GTEx and TCGA and then bind TPM and raw counts matrices and save them in 'tpm' and 'raw_counts' folders, respectively
 
 ```{r}
 cl <- makeCluster(8)
 registerDoParallel(cl, cores = 8)
 startTime <- Sys.time()
 #GTEx
-####getGTEXrse(savefilepath = "../data/recount3/")
-getRawCounts(project = "gtex", savefilepath = "../data/recount3/rse/gtex_tissue/") %>% write.csv(file = "../data/recount3/raw_counts/gtex_rawcounts.csv")
-getTPM(project = "gtex", savefilepath = "../data/recount3/rse/gtex_tissue/") %>% write.csv(file = "../data/recount3/tpm/gtex_tpm.csv")
+getGTEXrse(savefilepath = "../data/recount3/")
+getRawCounts(project = "gtex", savefilepath = "../data/recount3/rse/gtex_tissue/") %>% saveRDS(file = "../data/recount3/raw_counts/gtex_rawcounts.rds")
+getTPM(project = "gtex", savefilepath = "../data/recount3/rse/gtex_tissue/") %>% saveRDS(file = "../data/recount3/tpm/gtex_tpm.rds")
 endTime <- Sys.time()
 print(endTime - startTime) # Time difference of 1.00549 hours | 45.12318 mins
 gc()
+ 
 #TCGA
 startTime <- Sys.time()
 getTCGArse(savefilepath = "../data/recount3/")
-getRawCounts(project = "tcga", savefilepath = "../data/recount3/rse/tcga_tissue/") %>% write.csv(file = "../data/recount3/raw_counts/tcga_rawcounts.csv")
-getTPM(project = "tcga", savefilepath = "../data/recount3/rse/tcga_tissue/") %>% write.csv(file = "../data/recount3/tpm/tcga_tpm.csv")
+getRawCounts(project = "tcga", savefilepath = "../data/recount3/rse/tcga_tissue/") %>% saveRDS(file = "../data/recount3/raw_counts/tcga_rawcounts.rds")
+getTPM(project = "tcga", savefilepath = "../data/recount3/rse/tcga_tissue/") %>% saveRDS(file = "../data/recount3/tpm/tcga_tpm.rds")
 endTime <- Sys.time()
 print(endTime - startTime) # Time difference of 29.60129 mins | 20.82154 mins
 stopCluster(cl) 

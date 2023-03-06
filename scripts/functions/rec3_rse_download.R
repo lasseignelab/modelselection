@@ -94,9 +94,9 @@ getSRAproj <- function(project, cellosaurusfilepath, savefilepath){
   #save RSE 
   saveRDS(rse, paste(savefilepath, "rse/", project, "_rse.rds", sep = ""))
   
-  #save TPM and raw counts as csv's
-  write.csv(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", project, "_rawcounts.csv", sep = ""))
-  write.csv(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", project, "_tpm.csv", sep = ""))
+  #save TPM and raw counts
+  saveRDS(rse@assays@data@listData[["raw_counts"]], paste(savefilepath, "raw_counts/", project, "_rawcounts.rds", sep = ""))
+  saveRDS(rse@assays@data@listData[["TPM"]], paste(savefilepath, "tpm/", project, "_tpm.rds", sep = ""))
   
   return(rse)
 }
@@ -112,6 +112,7 @@ getTCGArse <- function(project = "tcga", savefilepath){
   #in recount3, TCGA is split up by tissue for projects
   proj <- c("BRCA","KIRC","LUAD","UCEC","THCA","PRAD","LUSC","HNSC","COAD","LGG","SKCM","LAML", "STAD","BLCA","OV","LIHC","KIRP","CESC","SARC","ESCA","PCPG","PAAD","READ","GBM","TGCT","THYM","KICH","MESO","UVM","ACC","UCS","DLBC","CHOL")
   #proj <- c("ACC","UCS","DLBC") #subset for testing
+  #proj <- c("ESCA","PAAD","SARC", "PCPG") #subset for testing
   
   foreach(i = 1:length(proj), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
     rse <- recount3::create_rse_manual(
@@ -142,8 +143,8 @@ getGTEXrse <- function(project = "gtex", savefilepath){
   
   proj_home <- "data_sources/gtex"#project home for recount3
   #in recount3, GTEx is split up by tissue for projects
-  proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "BONE_MARROW", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
-  #proj <- c("BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE") #subset for testing
+  proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
+  #proj <- c("COLON", "FALLOPIAN_TUBE") #subset for testing
   
   foreach(i = 1:length(proj), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
     rse <- recount3::create_rse_manual(
@@ -155,7 +156,7 @@ getGTEXrse <- function(project = "gtex", savefilepath){
       
     )
     #require(recount3)
-    rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
+    rse <- rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
     assay(rse, "counts") <- recount3::transform_counts(rse)
     assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
     
