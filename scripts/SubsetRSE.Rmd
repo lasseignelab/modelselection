@@ -5,34 +5,52 @@ date: '2022-08-10'
 ---
 
 > script to generate subset RSEs from a full RSE based on nuumber of most variable genes to include, whether variation is based on TCGA or GTEx, and whether to exclude purity genes
+# required packages
 
-# Prerequisites: objects with GTEx and TCGA TPM and all RSE objects, which are exported in the DataDownload script, rse_to_subset.R function script
+```{r}
+library(readr)
+library(tibble)
+```
+
+# Prerequisites: objects with GTEx and TCGA TPM and all RSE objects, which are exported in the ../dataDownload script, rse_to_subset.R function script
+```{r}
+tcga_tpm  <- readr::read_delim("../data/recount3/tpm/tcga_tpm.csv")
+tcga_tpm <- tibble::column_to_rownames(tcga_tpm, var = "...1")
+gtex_tpm  <- readr::read_delim("../data/recount3/tpm/gtex_tpm.csv")
+gtex_tpm <- tibble::column_to_rownames(gtex_tpm, var = "...1")
+```
+
 ```{r source load}
-source("/Users/avery/Desktop/work/R Projects/modelselection/scripts/functions/rse_to_subset.R") # change to where you have this function script saved
+source("../scripts/functions/rse_to_subset.R") # change to where you have this function script saved
 ```
 
 # make objects with varying genes for TCGA and GTEx to use with function
 ## computation for this sourced from https://github.com/katharineyu/TCGA_CCLE_paper/blob/master/R_scripts/tumor_cell_line_cor.R
 ```{r var genes}
+startTime <- Sys.time()
 iqr_gene <- apply(tcga_tpm, 1, IQR, na.rm = TRUE)
 tcga_varying_genes <- iqr_gene[order(iqr_gene, decreasing = T)]
 
 iqr_gene <- apply(gtex_tpm, 1, IQR, na.rm = TRUE)
 gtex_varying_genes <- iqr_gene[order(iqr_gene, decreasing = T)]
 
-purity_genes <- readRDS("~/Desktop/work/R Projects/modelselection/data/purity_genes.rds") # replace filepath
+purity_genes <- readRDS("../data/purity_genes.rds") # replace filepath
+endTime <- Sys.time()
+print(endTime - startTime)
+gc()
 ```
 
 # use function in rse_to_subset.R script to create RSE subsets accounting for each variable (RSE source, subset size, in- or excluding tumor purity-correlated genes, basing variant gene rankings on TCGA vs GTEx)
 ## this is set up to save each object but not to place in working env
 ```{r run function}
-project <- c("tcga", "gtex", "ccle", "hpa_t", "hpa_c", "pdx", "bone_t", "bone_n", "bone_c")
+startTime <- Sys.time()
+project <- c("ccle", "hpa_t", "hpa_c", "pdx", "bone_t", "bone_n", "bone_c")
 subset_num <- c(100, 1000, 5000, 10000)
 var_source <- c("tcga", "gtex")
 
 for(i in project){
   project_sub <- i
-  rse_sub <- readRDS(paste("/Users/avery/Desktop/work/R Projects/modelselection/data/recount3/rse", "/", project_sub, "_rse.rds", sep = ""))
+  rse_sub <- readRDS(paste("../data/recount3/rse", "/", project_sub, "_rse.rds", sep = ""))
   
   for(i in subset_num){
     subset_sub <- i
@@ -40,12 +58,44 @@ for(i in project){
     for(i in var_source){
       var_sub <- i
       
-      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, TRUE, TRUE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/") # with purity
-      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, FALSE, TRUE, TRUE, "/Users/avery/Desktop/work/R Projects/modelselection/data/rse_subsets/") # without
+      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, TRUE, "both", "../data/") # with purity
+      rse_to_subset(rse_sub, project_sub, subset_sub, var_sub, FALSE, "both", "../data/") # without
     }
   }
 }
+endTime <- Sys.time()
+print(endTime - startTime)
+gc()
 ```
+
+# different input type for gtex and tcga (combined TPM only, no combined RSE)
+```{r}
+startTime <- Sys.time()
+project <- list(tcga = tcga_tpm, gtex = gtex_tpm)
+subset_num <- c(100, 1000, 5000, 10000)
+var_source <- c("tcga", "gtex")
+
+for(i in 1:length(project)){
+  project_sub <- names(project)[i]
+  tpm_sub <- project[[project_sub]]
+  print(str(tpm_sub))
+  
+  for(i in subset_num){
+    subset_sub <- i
+    
+    for(i in var_source){
+      var_sub <- i
+      
+      rse_to_subset(tpm_sub, project_sub, subset_sub, var_sub, TRUE, "TPM", "../data/") # with purity
+      rse_to_subset(tpm_sub, project_sub, subset_sub, var_sub, FALSE, "TPM", "../data/") # without
+    }
+  }
+}
+
+endTime <- Sys.time()
+print(endTime - startTime)
+```
+
 
 # clean environment
 ```{r clean environment}
