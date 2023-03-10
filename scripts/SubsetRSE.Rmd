@@ -14,10 +14,8 @@ library(tibble)
 
 # Prerequisites: objects with GTEx and TCGA TPM and all RSE objects, which are exported in the ../dataDownload script, rse_to_subset.R function script
 ```{r}
-tcga_tpm  <- readr::read_delim("../data/recount3/tpm/tcga_tpm.csv")
-tcga_tpm <- tibble::column_to_rownames(tcga_tpm, var = "...1")
-gtex_tpm  <- readr::read_delim("../data/recount3/tpm/gtex_tpm.csv")
-gtex_tpm <- tibble::column_to_rownames(gtex_tpm, var = "...1")
+tcga_tpm  <- readRDS("../data/recount3/tpm/tcga_tpm.rds")
+gtex_tpm  <- readRDS("../data/recount3/tpm/gtex_tpm.rds")
 ```
 
 ```{r source load}

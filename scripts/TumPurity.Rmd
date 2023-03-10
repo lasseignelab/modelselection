@@ -19,12 +19,12 @@ library(tibble)
 
 # load in data from pancanatlas
 ```{r load}
-purity_info_pca <- read.csv("data/TCGA_mastercalls.abs_tables_JSedit.fixed.csv")
+purity_info_pca <- read.csv("../data/TCGA_mastercalls.abs_tables_JSedit.fixed.csv")
 ```
 
 # load in TCGA RSE's with parallelized for loop
 ```{r}
-rsefiles <- Sys.glob("data/recount3/rse/tcga_tissue/*_tcga_rse.rds")
+rsefiles <- Sys.glob("../data/recount3/rse/tcga_tissue/*_tcga_rse.rds")
 
 #setup for running in parallel
 cl <- makeCluster(4)
@@ -44,8 +44,8 @@ length(setdiff(tcga_barcode, purity_info_pca$array)) # 9759 represented, 336 not
 # find highly tumor purity-associated genes
 ```{r computation}
 #read in TCGA TPM
-TCGA <- readr::read_delim("data/recount3/tpm/tcga_tpm.csv") 
-TCGA <- tibble::column_to_rownames(TCGA, var = "...1")
+TCGA <- readRDS("../data/recount3/tpm/tcga_tpm.rds") 
+#TCGA <- tibble::column_to_rownames(TCGA, var = "...1")
 colnames(TCGA) <- tcga_barcode
 
 #find TCGA samples with purity information
@@ -69,7 +69,7 @@ TCGA <- TCGA[!(rownames(TCGA) %in% purity_genes),]
 
 # save tumor purity-associated genes
 ```{r save}
-saveRDS(purity_genes, "data/purity_genes.rds")
+saveRDS(purity_genes, "../data/purity_genes.rds")
 ```
 
 

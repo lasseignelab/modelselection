@@ -10,15 +10,17 @@ output: html_document
 
 # required packages
 ```{r load packages}
-library(recount)
-library(recount3)
-library(readr)
-source("../scripts/functions/rec3_rse_download.R") # change to where you have this function script saved
-library(foreach)
-library(parallel)
-library(doParallel)
-library(bigmemory)
-library(tidyverse)
+suppressPackageStartupMessages({
+  library(recount)
+  library(recount3)
+  library(readr)
+  source("../scripts/functions/rec3_rse_download.R") # change to where you have this function script saved
+  library(foreach)
+  library(parallel)
+  library(doParallel)
+  library(tidyverse)
+})
+
 ```
 
 # utilize functions in rec3_rse_download.R
