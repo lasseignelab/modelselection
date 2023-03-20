@@ -2,11 +2,11 @@
 
 # first, read in TPM and metadata
 ```{r}
-ccle_tpm <- readRDS("../data/rse_subsets/63856/tpm/ccle_tpm.rds")
-hpa_c_tpm <- readRDS("../data/rse_subsets/63856/tpm/hpa_c_tpm.rds")
-tcga_tpm <- readRDS("../data/rse_subsets/63856/tpm/tcga_tpm.rds")
-gtex_tpm <- readRDS("../data/rse_subsets/63856/tpm/gtex_tpm.rds")
-hpa_t_tpm <- readRDS("../data/rse_subsets/63856/tpm/hpa_t_tpm.rds")
+ccle_tpm <- readRDS("../data/recount3/tpm/ccle_tpm.rds")
+hpa_c_tpm <- readRDS("../data/recount3/tpm/hpa_c_tpm.rds")
+tcga_tpm <- readRDS("../data/recount3/tpm/tcga_tpm.rds")
+gtex_tpm <- readRDS("../data/recount3/tpm/gtex_tpm.rds")
+hpa_t_tpm <- readRDS("../data/recount3/tpm/hpa_t_tpm.rds")
 sample_master_meta <- readRDS("../data/sample_master_meta.rds")
 ```
 
@@ -16,6 +16,7 @@ sample_master_meta <- readRDS("../data/sample_master_meta.rds")
 # tpm are generated in DataDownload.Rmd and sample_master_meta in MetaTable.Rmd
 cellline_tpm <- cbind(ccle_tpm, hpa_c_tpm)
 cellline_tpm <- cellline_tpm[,colnames(cellline_tpm) %in% sample_master_meta[sample_master_meta$tissue_coerced == "Brain",]$rse_sampname]
+cellline_tpm <- cellline_tpm[,colnames(cellline_tpm) %in% sample_master_meta[grep("Grade Iv|Glioblastoma", sample_master_meta$disease),]$rse_sampname]
 
 tumor_tis_tpm <- tcga_tpm[,colnames(tcga_tpm) %in% sample_master_meta[sample_master_meta$tissue_coerced == "Brain",]$rse_sampname]
 
@@ -55,10 +56,10 @@ saveRDS(pdx_ndtis_indgene, "../data/rse_subsets/63856/ind_gene/pdx_ndtis_indgene
 
 # build histograms, is gene representation skewed?
 ```{r}
-hist(cl_tumtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain Cell Lines and Brain Tumor Tissue", xlab = "Spearman's Rho")
-hist(cl_ndtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain Cell Lines and Brain Non-Disease Tissue", xlab = "Spearman's Rho")
-hist(pdx_tumtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain PDXs and Brain Tumor Tissue", xlab = "Spearman's Rho")
-hist(pdx_ndtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain PDXs and Brain Non-Disease Tissue", xlab = "Spearman's Rho")
+hist(cl_tumtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between GBM Cell Lines and Brain Tumor Tissue", xlab = "Spearman's Rho")
+hist(cl_ndtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between GBM Cell Lines and Brain Non-Disease Tissue", xlab = "Spearman's Rho")
+hist(pdx_tumtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between GBM PDXs and Brain Tumor Tissue", xlab = "Spearman's Rho")
+hist(pdx_ndtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between GBM PDXs and Brain Non-Disease Tissue", xlab = "Spearman's Rho")
 ```
 
 # p val stats
