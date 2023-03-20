@@ -12,7 +12,7 @@ source("../scripts/functions/tissuecormatch.R") # change to where you have this 
 source("../scripts/functions/tissuecormatch_median.R")
 #add to docker
 library(ggplot2)
-library(ComplexHeatmap) #no package called ‘ComplexHeatmap’
+library(ComplexHeatmap) #no package called ‘ComplexHeatmap’ 
 library(matrixStats)
 ```
 
@@ -30,7 +30,7 @@ for(i in c(100, 1000, 5000, 10000)){
     pur <- i
     for(i in c("gtex", "tcga")){
       var <- i
-      #change "../data/rse_subsets/" to "../data/" for input and then add "rse_subsets" or "recount3" 
+      #change "../data/rse_subsets/" to "../data/" for input and then add "rse_subsets" or "recount3"  
       tissuecormatch(rootfilepath = "../data/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = sub, pur = pur, var = var, app_by = "disease", save = TRUE, savefilepath = "../data/")
     }
   }
@@ -73,9 +73,9 @@ rm(i, id, sub, var, cor_temp)
 
 # Plot how % mapping to origin changes between subsets
 ```{r}
-corr_table <- data.frame(genes_included = c(rep(100,4),rep(1000,4),rep(5000,4),rep(10000,4)), percent_map_to_origin = percent_map_to_origin[-17], Variation = rep(c("TCGA", "TCGA", "GTEx", "GTEx"),4), Purity = rep(c("Included", "Excluded"),8))
+corr_table <- data.frame(genes_included = factor(c(rep(100,4),rep(1000,4),rep(5000,4),rep(10000,4))), percent_map_to_origin = percent_map_to_origin[-17], Variation = rep(c("TCGA", "TCGA", "GTEx", "GTEx"),4), Purity = rep(c("Included", "Excluded"),8))
 library(ggplot2)
-ggplot(corr_table, aes(x = genes_included, y = percent_map_to_origin, color = Variation, linetype = Purity)) + geom_line() + geom_point() + geom_hline(yintercept=percent_map_to_origin[17], color="darkslategray", linetype="dashed") + labs(x = "Number of Genes Included", y = "% of Cell Lines That Correlate Highest to Origin Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13))
+ggplot(corr_table, aes(x = genes_included, y = percent_map_to_origin, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + geom_hline(yintercept=percent_map_to_origin[17], color="darkslategray") + labs(x = "Number of Genes Included", y = "% of Cell Lines That Correlate Highest to Origin Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13)) + scale_linetype_manual(values=c("dashed", "solid"))
 ggsave("../plots/percentmaptoorigin.png", units = "px", width = 2200, height = 1500)
 rm(percent_map_to_origin, corr_table)
 ```
@@ -108,10 +108,10 @@ colnames(tissuecormatch_med_res) <- c("oneH_I_T", "oneH_E_T", "oneH_I_G", "oneH_
 
 # summary line plot of median of each group size across all tissues
 ```{r}
-corr_median_lp <- data.frame(gene_set_size = rep(c(100,1000,5000,10000), 4), Purity = c(rep("Included", 4), rep("Excluded", 4), rep("Included", 4), rep("Excluded", 4)), Variation = c(rep("TCGA", 8), rep("GTEx", 8)), median_cor_across_tissues = c(median(tissuecormatch_med_res$oneH_I_T), median(tissuecormatch_med_res$oneK_I_T), median(tissuecormatch_med_res$fiveK_I_T), median(tissuecormatch_med_res$tenK_I_T), median(tissuecormatch_med_res$oneH_E_T), median(tissuecormatch_med_res$oneK_E_T), median(tissuecormatch_med_res$fiveK_E_T), median(tissuecormatch_med_res$tenK_E_T), median(tissuecormatch_med_res$oneH_I_G), median(tissuecormatch_med_res$oneK_I_G), median(tissuecormatch_med_res$fiveK_I_G), median(tissuecormatch_med_res$tenK_I_G), median(tissuecormatch_med_res$oneH_E_G), median(tissuecormatch_med_res$oneK_E_G), median(tissuecormatch_med_res$fiveK_E_G), median(tissuecormatch_med_res$tenK_E_G)))
+corr_median_lp <- data.frame(gene_set_size = factor(rep(c(100,1000,5000,10000), 4)), Purity = c(rep("Included", 4), rep("Excluded", 4), rep("Included", 4), rep("Excluded", 4)), Variation = c(rep("TCGA", 8), rep("GTEx", 8)), median_cor_across_tissues = c(median(tissuecormatch_med_res$oneH_I_T), median(tissuecormatch_med_res$oneK_I_T), median(tissuecormatch_med_res$fiveK_I_T), median(tissuecormatch_med_res$tenK_I_T), median(tissuecormatch_med_res$oneH_E_T), median(tissuecormatch_med_res$oneK_E_T), median(tissuecormatch_med_res$fiveK_E_T), median(tissuecormatch_med_res$tenK_E_T), median(tissuecormatch_med_res$oneH_I_G), median(tissuecormatch_med_res$oneK_I_G), median(tissuecormatch_med_res$fiveK_I_G), median(tissuecormatch_med_res$tenK_I_G), median(tissuecormatch_med_res$oneH_E_G), median(tissuecormatch_med_res$oneK_E_G), median(tissuecormatch_med_res$fiveK_E_G), median(tissuecormatch_med_res$tenK_E_G)))
 
 library(ggplot2)
-ggplot(corr_median_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line() + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(yintercept=median(tissuecormatch_med_res$ALL), color="darkslategray", linetype="dashed") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13))
+ggplot(corr_median_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(yintercept=median(tissuecormatch_med_res$ALL), color="darkslategray", linetype="dashed") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13))
 
 ggsave("../plots/medcortoorigin.png", units = "px", width = 2200, height = 1500)
 rm(corr_median_lp)
@@ -137,7 +137,7 @@ library(matrixStats)
 
 subset_medians <- c()
 subsets <- c()
-for(i in c(100, 1000, 5000, 10000)){ ###ERROR argument "savefilepath" is missing, with no defaultargume ##double checknt "savefilepath" is missing, with no default
+for(i in c(100, 1000, 5000, 10000)){
   num <- i
   for(i in c("purinc", "purexc")){
     pur <- i
@@ -152,12 +152,12 @@ for(i in c(100, 1000, 5000, 10000)){ ###ERROR argument "savefilepath" is missing
 }
 
 ##Save
-saveRDS(subset_gene_lists, "../data/rse_subsets/subset_gene_lists.rds")
+saveRDS(subset_gene_lists, "../data/rse_subsets/subset_gene_lists.rds") 
 saveRDS(subset_medians, "../data/rse_subsets/subset_medians.rds")
 saveRDS(subsets, "../data/rse_subsets/subsets.rds")
 gc()
 ```
-read in 
+read in
 
 ```{r}
 fullcor <- cor(cbind(gtex_tpm, tcga_tpm, bone_n_tpm, bone_t_tpm, hpa_t_tpm), cbind(ccle_tpm, pdx_tpm, hpa_c_tpm, bone_c_tpm), method = "spearman") # this object takes a while, only build if not already in env/exported
@@ -171,19 +171,19 @@ subset_table <- data.frame(category = subsets, median = subset_medians)
 
 ## make a line plot with it
 ```{r}
-subset_table_lp <- data.frame(name = subsets[-17], median_cor_across_tissues = subset_medians[-17], Variation = NA, Purity = NA, gene_set_size = c(rep(100,4), rep(1000,4), rep(5000,4), rep(10000,4)))
+subset_table_lp <- data.frame(name = subsets[-17], median_cor_across_tissues = subset_medians[-17], Variation = NA, Purity = NA, gene_set_size = factor(c(rep(100,4), rep(1000,4), rep(5000,4), rep(10000,4))))
 
-subset_table_lp[grep("tcga", subset_table_lp$name),]$Variation <- "tcga"
-subset_table_lp[grep("gtex", subset_table_lp$name),]$Variation <- "gtex"
+subset_table_lp[grep("tcga", subset_table_lp$name),]$Variation <- "TCGA"
+subset_table_lp[grep("gtex", subset_table_lp$name),]$Variation <- "GTEx"
 
-subset_table_lp[grep("inc", subset_table_lp$name),]$Purity <- "inc"
-subset_table_lp[grep("exc", subset_table_lp$name),]$Purity <- "exc"
+subset_table_lp[grep("inc", subset_table_lp$name),]$Purity <- "Included"
+subset_table_lp[grep("exc", subset_table_lp$name),]$Purity <- "Excluded"
 
 # plot
 library(ggplot2)
-ggplot(subset_table_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line() + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(aes(yintercept=subset_medians[17]), color="darkslategray", linetype="dashed") ##ERROR 
+ggplot(subset_table_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(aes(yintercept=subset_medians[17]), color="darkslategray") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13)) + scale_linetype_manual(values=c("dashed", "solid"))
 
-ggsave("../plots/medcortoorigin_fromfullcor.png") # this is used in final over other one
+ggsave("../plots/medcortoorigin_fromfullcor.png", units = "px", width = 2200, height = 1500) # this is used in final over other one
 ```
 
 ## make bubble plot for individual tissues
