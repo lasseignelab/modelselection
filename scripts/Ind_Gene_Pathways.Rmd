@@ -7,6 +7,7 @@ hpa_c_tpm <- readRDS("../data/recount3/tpm/hpa_c_tpm.rds")
 tcga_tpm <- readRDS("../data/recount3/tpm/tcga_tpm.rds")
 gtex_tpm <- readRDS("../data/recount3/tpm/gtex_tpm.rds")
 hpa_t_tpm <- readRDS("../data/recount3/tpm/hpa_t_tpm.rds")
+pdx_tpm <- readRDS("../data/recount3/tpm/pdx_tpm.rds")
 sample_master_meta <- readRDS("../data/sample_master_meta.rds")
 ```
 
