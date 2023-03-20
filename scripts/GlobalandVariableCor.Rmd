@@ -115,7 +115,7 @@ brain_cl_pca_meta <- data.frame(t(brain_cl_tpm_filt))
 brain_cl_pca_meta$cl <- sample_brain_meta[sample_brain_meta$rse_sampname %in% cell_line_samples,]$cell_line
 
 # make pca visual
-png("../plots/LW_pca_brain_cl.png")
+png("../plots/pca_brain_cl.png")
 autoplot(brain_cl_pcares, data = brain_cl_pca_meta, colour = "cl")
 dev.off()
 ```
@@ -137,16 +137,16 @@ brain_fact_cohort <- factor(brain_meta_sub)
 # making visual
 ## by just origin type
 colorset <- rainbow(4)
-png("../plots/LW_pca_origintype.png" )
+png("../plots/pca_origintype.png" )
 Scatter_Density(object = all_pca, batch = brain_fact_origin, color.set = colorset, batch.legend.title = "Origin Type", legend.cex = 1.5, legend.title.cex = 1.6, title.cex = 1.6)
 dev.off() # NOTE: for some reason with png() the image quality is always bad, even when I scale up dimensions. Better off generating plot in R script then >  image
 
 # by data source
 colorset <- rainbow(6)
-png("../plots/LW_pca_datacohort.png" )
+png("../plots/pca_datacohort.png" )
 Scatter_Density(object = all_pca, batch = brain_fact_cohort, color.set = colorset, batch.legend.title = "Data Cohort")
 dev.off()
-png("../plots/LW_pca_brain_origin.png" )
+png("../plots/pca_brain_origin.png" )
 Scatter_Density(object = all_pca, batch = brain_fact_cohort, color.set = colorset, trt = brain_fact_origin, batch.legend.title = "Data Cohort", trt.legend.title = "Data Type")
 dev.off()
 # I kinda want to see what the split in control tissue is led by
@@ -236,7 +236,7 @@ rownames(annotation_row) <- sample_brain_meta[grep("Tumor Tissue|Normal Tissue",
 annotation_row$Tissue[annotation_row$Tissue == "Normal Tissue"] <- "Control Tissue"
 colnames(annotation_row) <- "Brain Tissue Type"
 
-png("../plots/LW_fullcor_brain_heatmap.png" )
+png("../plots/fullcor_brain_heatmap.png" )
 pheatmap(fullcor_brain, annotation_col = annotation_col, annotation_row = annotation_row, show_rownames = FALSE, show_colnames = FALSE, color = colorRampPalette(c("yellow", "red"))(200))
 dev.off()
 # now heatmap of median for each subset
@@ -258,7 +258,7 @@ rownames(hm_rm) <- colnames(gbmcor)
 ann_colors <- list(Model = c('Cell Line' = "#ff9288", PDX = "#01dae0"))
 
 ## hm time
-png("../plots/LW_hm_brainsubs.png", width = 900, height = 1100)
+png("../plots/hm_brainsubs.png", width = 900, height = 1100)
 pheatmap(hm_rm, annotation_row = annotation_col, show_rownames = F, angle_col = 45, fontsize = 23, labels_col = c("GBM Tumor Tissue", "All Brain Tumor Tissue", "Brain Control Tissue"), color = colorRampPalette(c("yellow", "red"))(200), annotation_colors = ann_colors)
 dev.off()
 ```
@@ -287,14 +287,14 @@ rownames(cl_pdx_violin) <- clsub_pdx_samples
 # Basic violin plot
 ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model to Brain Control Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 15))
-ggsave(filename = "../plots/tags_violin/LW_fullgenesvio_brainclvspdx_con.png", width = 5, height = 6)
+ggsave(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_con.png", width = 5, height = 6)
 
 con_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model Sample to Brain Control Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
 
 ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 15))
-ggsave(filename = "../plots/tags_violin/LW_fullgenesvio_brainclvspdx_tum.png", width = 5, height = 6)
+ggsave(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_tum.png", width = 5, height = 6)
 
 tum_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model Sample to Brain Tumor Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
@@ -436,11 +436,11 @@ source("../scripts/functions/geom_split_violin.R")
 
 ```{r plot}
 ggplot(cor_dismatch_cantis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Tumor Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
-ggsave(filename = "../plots/LW_vio_braincltoeachtum.png", 
+ggsave(filename = "../plots/vio_braincltoeachtum.png", 
           width = 18, height = 7)
 
 ggplot(cor_dismatch_contis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Control Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
-ggsave(filename = "../plots/LW_vio_braincltoeachcon.png", 
+ggsave(filename = "../plots/vio_braincltoeachcon.png", 
           width = 18, height = 7)
 ```
 

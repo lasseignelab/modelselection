@@ -201,10 +201,10 @@ ggplot(tissuecormatch_med_bp, aes(x = Cancer, y = cor, size = Subset, color = Va
 
 # split into 2 to lessen complexity
 ggplot(tissuecormatch_med_bp[tissuecormatch_med_bp$Purity != "exc",], aes(x = Cancer, y = cor, size = Subset, color = Variance)) + geom_count() + theme(axis.text.x = element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue") + ggtitle("Including Tumor Purity-Correlated Genes") + ylim(0,1)
-ggsave("../plots/LW_medcortoorigin_tissplit_incpur.png")
+ggsave("../plots/medcortoorigin_tissplit_incpur.png")
 
 ggplot(tissuecormatch_med_bp[tissuecormatch_med_bp$Purity != "inc",], aes(x = Cancer, y = cor, size = Subset, color = Variance)) + geom_count() + theme(axis.text.x = element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue") + ggtitle("Excluding Tumor Purity-Correlated Genes") + ylim(0,1)
-ggsave("../plots/LW_medcortoorigin_tissplit_excpur.png")
+ggsave("../plots/medcortoorigin_tissplit_excpur.png")
 ```
 
 # redo bubble plot as a heatmap
@@ -241,8 +241,6 @@ rownames(tissuecormatch_med_res_annorow) <- c(substr(rownames(tissuecormatch_med
 ```
 
 ```{r}
-library(ComplexHeatmap)
-
 # column annotations
 column_ha <- HeatmapAnnotation(df = as.data.frame(t(tissuecormatch_med_res_annorow[23:25,])),
                                col = list("Subset Size" = c("  100" = "#C86991", " 1000" = "#FEE440", " 5000" = "#328651", "10000" = "#00BBF9", "63856" = "#9B5DE5"),
