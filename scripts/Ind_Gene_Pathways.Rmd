@@ -42,28 +42,28 @@ rm(test, x, y)
 cl_tumtis_indgene <- cor_eachgene(cellline_tpm, tumor_tis_tpm)
 saveRDS(cl_tumtis_indgene, "../data/rse_subsets/63856/ind_gene/cl_tumtis_indgene.rds")
 
-cl_contis_indgene <- cor_eachgene(cellline_tpm, con_tis_tpm)
-saveRDS(cl_contis_indgene, "../data/rse_subsets/63856/ind_gene/cl_contis_indgene.rds")
+cl_ndtis_indgene <- cor_eachgene(cellline_tpm, con_tis_tpm)
+saveRDS(cl_ndtis_indgene, "../data/rse_subsets/63856/ind_gene/cl_ndtis_indgene.rds")
 
 pdx_tumtis_indgene <- cor_eachgene(pdx_tpm, tumor_tis_tpm)
 saveRDS(pdx_tumtis_indgene, "../data/rse_subsets/63856/ind_gene/pdx_tumtis_indgene.rds")
 
-pdx_contis_indgene <- cor_eachgene(pdx_tpm, con_tis_tpm)
-saveRDS(pdx_contis_indgene, "../data/rse_subsets/63856/ind_gene/pdx_contis_indgene.rds")
+pdx_ndtis_indgene <- cor_eachgene(pdx_tpm, con_tis_tpm)
+saveRDS(pdx_ndtis_indgene, "../data/rse_subsets/63856/ind_gene/pdx_ndtis_indgene.rds")
 # put back into env if they have been removed
 ```
 
 # build histograms, is gene representation skewed?
 ```{r}
 hist(cl_tumtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain Cell Lines and Brain Tumor Tissue", xlab = "Spearman's Rho")
-hist(cl_contis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain Cell Lines and Brain Control Tissue", xlab = "Spearman's Rho")
+hist(cl_ndtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain Cell Lines and Brain Non-Disease Tissue", xlab = "Spearman's Rho")
 hist(pdx_tumtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain PDXs and Brain Tumor Tissue", xlab = "Spearman's Rho")
-hist(pdx_contis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain PDXs and Brain Control Tissue", xlab = "Spearman's Rho")
+hist(pdx_ndtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between Brain PDXs and Brain Non-Disease Tissue", xlab = "Spearman's Rho")
 ```
 
 # p val stats
 ```{r}
-print(c(length(na.omit(cl_tumtis_indgene[cl_tumtis_indgene$p.value < 0.05,]$p.value)), length(na.omit(cl_contis_indgene[cl_contis_indgene$p.value < 0.05,]$p.value)), length(na.omit(pdx_tumtis_indgene[pdx_tumtis_indgene$p.value < 0.05,]$p.value)), length(na.omit(pdx_contis_indgene[pdx_contis_indgene$p.value < 0.05,]$p.value)))) 
+print(c(length(na.omit(cl_tumtis_indgene[cl_tumtis_indgene$p.value < 0.05,]$p.value)), length(na.omit(cl_ndtis_indgene[cl_ndtis_indgene$p.value < 0.05,]$p.value)), length(na.omit(pdx_tumtis_indgene[pdx_tumtis_indgene$p.value < 0.05,]$p.value)), length(na.omit(pdx_ndtis_indgene[pdx_ndtis_indgene$p.value < 0.05,]$p.value)))) 
 
 # shouldn't be any NAs anymore but left in just in case as they would be counted here
 ```
@@ -78,11 +78,11 @@ _Genes that pass p-val filtering (<0.05):_
 ```{r}
 # first, make lists of genes that are significant for each
 cl_tumtis_indgene_siggenes <- rownames(na.omit(cl_tumtis_indgene[cl_tumtis_indgene$p.value < 0.05,]))
-cl_contis_indgene_siggenes <- rownames(na.omit(cl_contis_indgene[cl_contis_indgene$p.value < 0.05,]))
+cl_ndtis_indgene_siggenes <- rownames(na.omit(cl_ndtis_indgene[cl_ndtis_indgene$p.value < 0.05,]))
 pdx_tumtis_indgene_siggenes <- rownames(na.omit(pdx_tumtis_indgene[pdx_tumtis_indgene$p.value < 0.05,]))
-pdx_contis_indgene_siggenes <- rownames(na.omit(pdx_contis_indgene[pdx_contis_indgene$p.value < 0.05,]))
+pdx_ndtis_indgene_siggenes <- rownames(na.omit(pdx_ndtis_indgene[pdx_ndtis_indgene$p.value < 0.05,]))
 
-cl_pdx_indgene_sigvenn <- list(justcl_tum = cl_tumtis_indgene_siggenes[!cl_tumtis_indgene_siggenes %in% pdx_tumtis_indgene_siggenes], just_pdx_tum = pdx_tumtis_indgene_siggenes[!pdx_tumtis_indgene_siggenes %in% cl_tumtis_indgene_siggenes], in_both_tum = intersect(cl_tumtis_indgene_siggenes, pdx_tumtis_indgene_siggenes), justcl_con = cl_contis_indgene_siggenes[!cl_contis_indgene_siggenes %in% pdx_contis_indgene_siggenes], just_pdx_con = pdx_contis_indgene_siggenes[!pdx_contis_indgene_siggenes %in% cl_contis_indgene_siggenes], in_both_con = intersect(cl_contis_indgene_siggenes, pdx_contis_indgene_siggenes))
+cl_pdx_indgene_sigvenn <- list(justcl_tum = cl_tumtis_indgene_siggenes[!cl_tumtis_indgene_siggenes %in% pdx_tumtis_indgene_siggenes], just_pdx_tum = pdx_tumtis_indgene_siggenes[!pdx_tumtis_indgene_siggenes %in% cl_tumtis_indgene_siggenes], in_both_tum = intersect(cl_tumtis_indgene_siggenes, pdx_tumtis_indgene_siggenes), justcl_con = cl_ndtis_indgene_siggenes[!cl_ndtis_indgene_siggenes %in% pdx_ndtis_indgene_siggenes], just_pdx_con = pdx_ndtis_indgene_siggenes[!pdx_ndtis_indgene_siggenes %in% cl_ndtis_indgene_siggenes], in_both_con = intersect(cl_ndtis_indgene_siggenes, pdx_ndtis_indgene_siggenes))
 ```
 
 _Genes that are exclusively significant to one group or common in both_
@@ -138,18 +138,18 @@ cor_sig_gene_stats <- data.frame(cl_tumtis = c(length(subset(cl_tumtis_indgene, 
                                                length(subset(cl_tumtis_indgene, rho < 0 & p.value < .05)$rho),
                                                length(subset(cl_tumtis_indgene, rho >= 0 & p.value >= .05)$rho),
                                                length(subset(cl_tumtis_indgene, rho >= 0 & p.value < .05)$rho)),
-                                 cl_contis = c(length(subset(cl_contis_indgene, rho < 0 & p.value >= .05)$rho), 
-                                               length(subset(cl_contis_indgene, rho < 0 & p.value < .05)$rho),
-                                               length(subset(cl_contis_indgene, rho >= 0 & p.value >= .05)$rho),
-                                               length(subset(cl_contis_indgene, rho >= 0 & p.value < .05)$rho)),
+                                 cl_ndtis = c(length(subset(cl_ndtis_indgene, rho < 0 & p.value >= .05)$rho), 
+                                               length(subset(cl_ndtis_indgene, rho < 0 & p.value < .05)$rho),
+                                               length(subset(cl_ndtis_indgene, rho >= 0 & p.value >= .05)$rho),
+                                               length(subset(cl_ndtis_indgene, rho >= 0 & p.value < .05)$rho)),
                                  pdx_tumtis = c(length(subset(pdx_tumtis_indgene, rho < 0 & p.value >= .05)$rho), 
                                                length(subset(pdx_tumtis_indgene, rho < 0 & p.value < .05)$rho),
                                                length(subset(pdx_tumtis_indgene, rho >= 0 & p.value >= .05)$rho),
                                                length(subset(pdx_tumtis_indgene, rho >= 0 & p.value < .05)$rho)),
-                                 pdx_contis = c(length(subset(pdx_contis_indgene, rho < 0 & p.value >= .05)$rho), 
-                                               length(subset(pdx_contis_indgene, rho < 0 & p.value < .05)$rho),
-                                               length(subset(pdx_contis_indgene, rho >= 0 & p.value >= .05)$rho),
-                                               length(subset(pdx_contis_indgene, rho >= 0 & p.value < .05)$rho)))
+                                 pdx_ndtis = c(length(subset(pdx_ndtis_indgene, rho < 0 & p.value >= .05)$rho), 
+                                               length(subset(pdx_ndtis_indgene, rho < 0 & p.value < .05)$rho),
+                                               length(subset(pdx_ndtis_indgene, rho >= 0 & p.value >= .05)$rho),
+                                               length(subset(pdx_ndtis_indgene, rho >= 0 & p.value < .05)$rho)))
 # NOTE: this subset excludes NAs, so all 16952 genes with no counts in any sample are excluded
 
 rownames(cor_sig_gene_stats) <- c("negcor_insp", "negcor_sigp", "poscor_insp", "poscor_sigp")
@@ -157,9 +157,9 @@ rownames(cor_sig_gene_stats) <- c("negcor_insp", "negcor_sigp", "poscor_insp", "
 
 # pathway analysis for +/- sig/insig
 ```{r}
-indgene_cor_sig_res <- list()
+indgene_cor_pathway_res <- list()
 
-# I can't get this to work as a loop with i in c(cl_tumtis_indgene, cl_contis_indgene, pdx_tumtis_indgene, pdx_contis_indgene) so as annoying as it is I'm running it separately
+# I can't get this to work as a loop with i in c(cl_tumtis_indgene, cl_ndtis_indgene, pdx_tumtis_indgene, pdx_ndtis_indgene) so as annoying as it is I'm running it separately
 
 sub <- "cl_tumtis"
 for(i in c("sig", "insig")){
@@ -169,21 +169,21 @@ for(i in c("sig", "insig")){
     
     if(sig == "sig"){
       if(cor == "pos"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_tumtis_indgene, rho >= 0 & p.value < .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_tumtis_indgene, rho >= 0 & p.value < .05))
       }else if(cor == "neg"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_tumtis_indgene, rho < 0 & p.value < .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_tumtis_indgene, rho < 0 & p.value < .05))
       }
     }else if(sig == "insig"){
       if(cor == "pos"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_tumtis_indgene, rho >= 0 & p.value >= .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_tumtis_indgene, rho >= 0 & p.value >= .05))
       }else if(cor == "neg"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_tumtis_indgene, rho < 0 & p.value >= .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_tumtis_indgene, rho < 0 & p.value >= .05))
       }
     }
   }
 }
 
-sub <- "cl_contis"
+sub <- "cl_ndtis"
 for(i in c("sig", "insig")){
   sig <- i
   for(i in c("pos", "neg")){
@@ -191,15 +191,15 @@ for(i in c("sig", "insig")){
     
     if(sig == "sig"){
       if(cor == "pos"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_contis_indgene, rho >= 0 & p.value < .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_ndtis_indgene, rho >= 0 & p.value < .05))
       }else if(cor == "neg"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_contis_indgene, rho < 0 & p.value < .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_ndtis_indgene, rho < 0 & p.value < .05))
       }
     }else if(sig == "insig"){
       if(cor == "pos"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_contis_indgene, rho >= 0 & p.value >= .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_ndtis_indgene, rho >= 0 & p.value >= .05))
       }else if(cor == "neg"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_contis_indgene, rho < 0 & p.value >= .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(cl_ndtis_indgene, rho < 0 & p.value >= .05))
       }
     }
   }
@@ -213,21 +213,21 @@ for(i in c("sig", "insig")){
     
     if(sig == "sig"){
       if(cor == "pos"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_tumtis_indgene, rho >= 0 & p.value < .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_tumtis_indgene, rho >= 0 & p.value < .05))
       }else if(cor == "neg"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_tumtis_indgene, rho < 0 & p.value < .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_tumtis_indgene, rho < 0 & p.value < .05))
       }
     }else if(sig == "insig"){
       if(cor == "pos"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_tumtis_indgene, rho >= 0 & p.value >= .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_tumtis_indgene, rho >= 0 & p.value >= .05))
       }else if(cor == "neg"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_tumtis_indgene, rho < 0 & p.value >= .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_tumtis_indgene, rho < 0 & p.value >= .05))
       }
     }
   }
 }
 
-sub <- "pdx_contis"
+sub <- "pdx_ndtis"
 for(i in c("sig", "insig")){
   sig <- i
   for(i in c("pos", "neg")){
@@ -235,15 +235,15 @@ for(i in c("sig", "insig")){
     
     if(sig == "sig"){
       if(cor == "pos"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_contis_indgene, rho >= 0 & p.value < .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_ndtis_indgene, rho >= 0 & p.value < .05))
       }else if(cor == "neg"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_contis_indgene, rho < 0 & p.value < .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_ndtis_indgene, rho < 0 & p.value < .05))
       }
     }else if(sig == "insig"){
       if(cor == "pos"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_contis_indgene, rho >= 0 & p.value >= .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_ndtis_indgene, rho >= 0 & p.value >= .05))
       }else if(cor == "neg"){
-        indgene_cor_sig_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_contis_indgene, rho < 0 & p.value >= .05))
+        indgene_cor_pathway_res[[sub]][[sig]][[cor]] <- rownames(subset(pdx_ndtis_indgene, rho < 0 & p.value >= .05))
       }
     }
   }
@@ -253,7 +253,7 @@ rm(sig, sub, cor, i)
 
 ## pathways!
 ```{r}
-for(i in names(indgene_cor_sig_res)){
+for(i in names(indgene_cor_pathway_res)){
   name <- i
   for(i in c("sig", "insig")){
     sig <- i
@@ -261,16 +261,59 @@ for(i in names(indgene_cor_sig_res)){
       cor <- i
       
       # save the gene list
-      genes <- indgene_cor_sig_res[[name]][[sig]][[cor]]
+      genes <- indgene_cor_pathway_res[[name]][[sig]][[cor]]
       # clear object
-      indgene_cor_sig_res[[name]][[sig]][[cor]] <- NULL
+      indgene_cor_pathway_res[[name]][[sig]][[cor]] <- NULL
       # nest genes
-      indgene_cor_sig_res[[name]][[sig]][[cor]][["genes"]] <- genes
+      indgene_cor_pathway_res[[name]][[sig]][[cor]][["genes"]] <- genes
       # gost
-      indgene_cor_sig_res[[name]][[sig]][[cor]][["gost"]] <- gprofiler2::gost(query = strtrim(genes,15), significant = FALSE)
+      indgene_cor_pathway_res[[name]][[sig]][[cor]][["gost"]] <- gprofiler2::gost(query = strtrim(genes,15), significant = FALSE)
     }
   }
 }
+
+saveRDS(indgene_cor_pathway_res, "../data/indgene_cor_pathway_res.rds")
+
+# to export separate CSVs of genes provided and their corresponding GOSt pathway analysis:
+# for(i in names(indgene_cor_pathway_res)){
+#     comp <- i
+#     for(i in c("sig", "insig")){
+#         sig <- i
+#         for(i in c("pos", "neg")){
+#             cor <- i
+#
+#             # need to change that $parent column of gost res is a list for export
+#             temp <- indgene_cor_pathway_res[[comp]][[sig]][[cor]][["gost"]][["result"]]
+#             temp[["parents"]] <- as.character(temp[["parents"]])
+#             
+#             write.csv(temp, paste("../data/genepathways/", "indgene_cor_pathway_", comp, "_", sig, "_", cor, "_", "gostres.csv", sep = ""))
+#         }
+#     }
+# }
+
+
+# now want to make one big dataframe with gene inputs for each query, but they are all of different lengths, so adjust with empty cells
+# pathgenes <- list()
+# for(i in names(indgene_cor_pathway_res)){
+#     comp <- i
+#     for(i in c("sig", "insig")){
+#         sig <- i
+#         for(i in c("pos", "neg")){
+#             cor <- i
+#             
+#             pathgenes[[paste(comp, sig, cor, sep = "_")]] <- indgene_cor_pathway_res[[comp]][[sig]][[cor]][["genes"]]
+#         }
+#     }
+# }
+# 
+# # make all the same length
+# max(lengths(pathgenes)) #26296, this is the longest it needs to be
+# for(i in names(pathgenes)){
+#   length(pathgenes[[i]]) <- 26296
+# }
+# pathgenes <- as.data.frame(pathgenes)
+# 
+# write.csv(pathgenes, "../data/genepathways/indgene_cor_pathway_geneinputs.csv")
 ```
 
 ## print # of common genes for venn diagram:
@@ -278,37 +321,37 @@ for(i in names(indgene_cor_sig_res)){
 print("correlated with tumor")
 
 print("positive cor")
-print(paste("in just cl:", length(indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]][!indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["pos"]][["genes"]]])))
-print(paste("in both:", length(indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]][indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["pos"]][["genes"]]])))
-print(paste("in just pdx:", length(indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["pos"]][["genes"]][!indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]]])))
+print(paste("in just cl:", length(indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]][!indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["genes"]]])))
+print(paste("in both:", length(indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]][indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["genes"]]])))
+print(paste("in just pdx:", length(indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["genes"]][!indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["pos"]][["genes"]]])))
 
 print("negative cor")
-print(paste("in just cl:", length(indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]][!indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["neg"]][["genes"]]])))
-print(paste("in both:", length(indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]][indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["neg"]][["genes"]]])))
-print(paste("in just pdx:", length(indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["neg"]][["genes"]][!indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]]])))
+print(paste("in just cl:", length(indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]][!indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["neg"]][["genes"]]])))
+print(paste("in both:", length(indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]][indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["neg"]][["genes"]]])))
+print(paste("in just pdx:", length(indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["neg"]][["genes"]][!indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["neg"]][["genes"]]])))
 
 print("correlated with control")
 
 print("positive cor")
-print(paste("in just cl:", length(indgene_cor_sig_res[["cl_contis"]][["sig"]][["pos"]][["genes"]][!indgene_cor_sig_res[["cl_contis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_sig_res[["pdx_contis"]][["sig"]][["pos"]][["genes"]]])))
-print(paste("in both:", length(indgene_cor_sig_res[["cl_contis"]][["sig"]][["pos"]][["genes"]][indgene_cor_sig_res[["cl_contis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_sig_res[["pdx_contis"]][["sig"]][["pos"]][["genes"]]])))
-print(paste("in just pdx:", length(indgene_cor_sig_res[["pdx_contis"]][["sig"]][["pos"]][["genes"]][!indgene_cor_sig_res[["pdx_contis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_sig_res[["cl_contis"]][["sig"]][["pos"]][["genes"]]])))
+print(paste("in just cl:", length(indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["genes"]][!indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["pos"]][["genes"]]])))
+print(paste("in both:", length(indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["genes"]][indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["pos"]][["genes"]]])))
+print(paste("in just pdx:", length(indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["pos"]][["genes"]][!indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["pos"]][["genes"]] %in% indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["genes"]]])))
 
 print("negative cor")
-print(paste("in just cl:", length(indgene_cor_sig_res[["cl_contis"]][["sig"]][["neg"]][["genes"]][!indgene_cor_sig_res[["cl_contis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_sig_res[["pdx_contis"]][["sig"]][["neg"]][["genes"]]])))
-print(paste("in both:", length(indgene_cor_sig_res[["cl_contis"]][["sig"]][["neg"]][["genes"]][indgene_cor_sig_res[["cl_contis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_sig_res[["pdx_contis"]][["sig"]][["neg"]][["genes"]]])))
-print(paste("in just pdx:", length(indgene_cor_sig_res[["pdx_contis"]][["sig"]][["neg"]][["genes"]][!indgene_cor_sig_res[["pdx_contis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_sig_res[["cl_contis"]][["sig"]][["neg"]][["genes"]]])))
+print(paste("in just cl:", length(indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["genes"]][!indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["neg"]][["genes"]]])))
+print(paste("in both:", length(indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["genes"]][indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["neg"]][["genes"]]])))
+print(paste("in just pdx:", length(indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["neg"]][["genes"]][!indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["neg"]][["genes"]] %in% indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["genes"]]])))
 ```
 
 ```{r}
-for(i in names(indgene_cor_sig_res)){
+for(i in names(indgene_cor_pathway_res)){
   name <- i
   for(i in c("sig", "insig")){
     sig <- i
     for(i in c("pos", "neg")){
       cor <- i
       
-      gostplot(indgene_cor_sig_res[[name]][[sig]][[cor]][["gost"]], interactive = FALSE)
+      gostplot(indgene_cor_pathway_res[[name]][[sig]][[cor]][["gost"]], interactive = FALSE)
     }
   }
 }
@@ -318,43 +361,43 @@ for(i in names(indgene_cor_sig_res)){
 ```{r}
 # cl_tum
 ## pos
-publish_gosttable(indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
+publish_gosttable(indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 
 # neg
-publish_gosttable(indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["neg"]][["gost"]], highlight_terms = indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_sig_res[["cl_tumtis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
+publish_gosttable(indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["neg"]][["gost"]], highlight_terms = indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 
 # cl_con
 ## pos
-publish_gosttable(indgene_cor_sig_res[["cl_contis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_sig_res[["cl_contis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_sig_res[["cl_contis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
+publish_gosttable(indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 
 ## neg
 ### 222 total, sub to top 10
-temp <- indgene_cor_sig_res[["cl_contis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_sig_res[["cl_contis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]
+temp <- indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]
 temp <- temp[order(temp$p_value),][1:10,]$term_id
 
-publish_gosttable(indgene_cor_sig_res[["cl_contis"]][["sig"]][["neg"]][["gost"]], highlight_terms = temp, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
+publish_gosttable(indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["gost"]], highlight_terms = temp, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 
 #pdx_tum
 ## pos
-publish_gosttable(indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
+publish_gosttable(indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 
 ## neg
 ### 272 total, sub to top 10
-temp <- indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]
+temp <- indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]
 temp <- temp[order(temp$p_value),][1:10,]$term_id
 
-publish_gosttable(indgene_cor_sig_res[["pdx_tumtis"]][["sig"]][["neg"]][["gost"]], highlight_terms = temp, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
+publish_gosttable(indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["neg"]][["gost"]], highlight_terms = temp, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 
 # pdx_con
 ### 11 total, sub to top 10
 ## pos
-temp <- indgene_cor_sig_res[["pdx_contis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_sig_res[["pdx_contis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]
+temp <- indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]
 temp <- temp[order(temp$p_value),][1:10,]$term_id
 
-publish_gosttable(indgene_cor_sig_res[["pdx_contis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_sig_res[["pdx_contis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_sig_res[["pdx_contis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
+publish_gosttable(indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 
 ## neg
-publish_gosttable(indgene_cor_sig_res[["pdx_contis"]][["sig"]][["neg"]][["gost"]], highlight_terms = indgene_cor_sig_res[["pdx_contis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_sig_res[["pdx_contis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
+publish_gosttable(indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["neg"]][["gost"]], highlight_terms = indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 ```
 
 # jen's enrichment plots
@@ -365,7 +408,7 @@ library(viridis)
 ```
 
 ```{r}
-for(i in names(indgene_cor_sig_res)){
+for(i in names(indgene_cor_pathway_res)){
   name <- i
   for(i in c("sig", "insig")){
     sig <- i
@@ -373,10 +416,10 @@ for(i in names(indgene_cor_sig_res)){
       sign <- i
       
       # add -log10p
-      indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] <- -1 * log10(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["p_value"]])
+      indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] <- -1 * log10(indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["p_value"]])
       
       # order by -log10p decreasing
-      indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]] <- indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][order(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]]$neg_log10p, decreasing = TRUE),]
+      indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]] <- indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][order(indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]]$neg_log10p, decreasing = TRUE),]
     }
   }
 }
@@ -384,14 +427,14 @@ for(i in names(indgene_cor_sig_res)){
 
 ## how many of each are significant (-log10p >1.3)?
 ```{r}
-for(i in names(indgene_cor_sig_res)){
+for(i in names(indgene_cor_pathway_res)){
   name <- i
   for(i in c("sig", "insig")){
     sig <- i
     for(i in c("pos", "neg")){
       sign <- i
       
-      print(paste(name, sig, sign, "n =", length(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3])))
+      print(paste(name, sig, sign, "n =", length(indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3])))
     }
   }
 }
@@ -401,18 +444,18 @@ for(i in names(indgene_cor_sig_res)){
 ```{r}
 library(ggpubr)
 
-for(i in names(indgene_cor_sig_res)){
+for(i in names(indgene_cor_pathway_res)){
   name <- i
   for(i in c("sig", "insig")){
     sig <- i
     for(i in c("pos", "neg")){
       sign <- i
       
-      if(length(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) >= 10){
-        ggplot(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,][1:10,], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= recall)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", name)) + labs(color = "Recall", size = "Recall") + scale_color_viridis(option="plasma")+ theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10)) %>%
+      if(length(indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) >= 10){
+        ggplot(indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,][1:10,], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= recall)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", name)) + labs(color = "Recall", size = "Recall") + scale_color_viridis(option="plasma")+ theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10)) %>%
           ggexport(filename = paste("../plots/ind_gene/", name,sig,sign,".png", sep = ""))
-      }else if(length(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) < 10){
-        ggplot(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= recall)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", name)) + labs(color = "Recall", size = "Recall") + scale_color_viridis(option="plasma")+ theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10)) %>%
+      }else if(length(indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) < 10){
+        ggplot(indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= recall)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", name)) + labs(color = "Recall", size = "Recall") + scale_color_viridis(option="plasma")+ theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10)) %>%
           ggexport(filename = paste("../plots/ind_gene/", name,sig,sign,".png", sep = ""))
       }
     }
@@ -424,35 +467,35 @@ for(i in names(indgene_cor_sig_res)){
 ## first, make dataframe subsets
 ```{r}
 # start with making subset list with all info
-indgene_cor_sig_res_sub <- list()
+indgene_cor_pathway_res_sub <- list()
 
-for(i in names(indgene_cor_sig_res)){
+for(i in names(indgene_cor_pathway_res)){
   name <- i
   for(i in c("sig", "insig")){
     sig <- i
     for(i in c("pos", "neg")){
       sign <- i
       
-      if(length(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) >= 10){
-        indgene_cor_sig_res_sub[[name]][[sig]][[sign]] <- indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,][1:10,]
+      if(length(indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) >= 10){
+        indgene_cor_pathway_res_sub[[name]][[sig]][[sign]] <- indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,][1:10,]
         
-      }else if(length(indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) < 10){
-        indgene_cor_sig_res_sub[[name]][[sig]][[sign]] <- indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_sig_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,]
+      }else if(length(indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]][indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][["neg_log10p"]] > 1.3]) < 10){
+        indgene_cor_pathway_res_sub[[name]][[sig]][[sign]] <- indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]][indgene_cor_pathway_res[[name]][[sig]][[sign]][["gost"]][["result"]]$significant == TRUE,]
       }
     }
   }
 }
 
 # make a bunch of dataframes with only the info we need and combined positive and negative (with column identifying which is which)
-indgene_cor_sig_res_sub_dfs_posneg <- list()
+indgene_cor_pathway_res_sub_dfs_posneg <- list()
 
-for(i in names(indgene_cor_sig_res_sub)){
+for(i in names(indgene_cor_pathway_res_sub)){
   subname <- i
   for(i in c("sig", "insig")){
-    indgene_cor_sig_res_sub_dfs_posneg[[subname]][[i]] <- data.frame(term_name = c(indgene_cor_sig_res_sub[[subname]][[i]][["pos"]][["term_name"]], indgene_cor_sig_res_sub[[subname]][[i]][["neg"]][["term_name"]]),
-                                          neg_log10p = c(indgene_cor_sig_res_sub[[subname]][[i]][["pos"]][["neg_log10p"]], indgene_cor_sig_res_sub[[subname]][[i]][["neg"]][["neg_log10p"]]),
-                                          recall = c(indgene_cor_sig_res_sub[[subname]][[i]][["pos"]][["recall"]], indgene_cor_sig_res_sub[[subname]][[i]][["neg"]][["recall"]]),
-                                          posneg = c(rep("Positive", length(indgene_cor_sig_res_sub[[subname]][[i]][["pos"]]$query)), rep("Negative", length(indgene_cor_sig_res_sub[[subname]][[i]][["neg"]]$query))))
+    indgene_cor_pathway_res_sub_dfs_posneg[[subname]][[i]] <- data.frame(term_name = c(indgene_cor_pathway_res_sub[[subname]][[i]][["pos"]][["term_name"]], indgene_cor_pathway_res_sub[[subname]][[i]][["neg"]][["term_name"]]),
+                                          neg_log10p = c(indgene_cor_pathway_res_sub[[subname]][[i]][["pos"]][["neg_log10p"]], indgene_cor_pathway_res_sub[[subname]][[i]][["neg"]][["neg_log10p"]]),
+                                          recall = c(indgene_cor_pathway_res_sub[[subname]][[i]][["pos"]][["recall"]], indgene_cor_pathway_res_sub[[subname]][[i]][["neg"]][["recall"]]),
+                                          posneg = c(rep("Positive", length(indgene_cor_pathway_res_sub[[subname]][[i]][["pos"]]$query)), rep("Negative", length(indgene_cor_pathway_res_sub[[subname]][[i]][["neg"]]$query))))
   }
 }
 ```
@@ -460,42 +503,42 @@ for(i in names(indgene_cor_sig_res_sub)){
 # additional option with combined sig/insig and additional identifier
 ## NOTE: decided to JUST combine pos/neg, display sig, insig will be in supps
 ```{r}
-indgene_cor_sig_res_sub_dfs_posneg_siginsig <- list()
+indgene_cor_pathway_res_sub_dfs_posneg_siginsig <- list()
 
-for(i in names(indgene_cor_sig_res_sub)){
-  indgene_cor_sig_res_sub_dfs_posneg_siginsig[[paste(i)]] <- data.frame(term_name = c(indgene_cor_sig_res_sub_dfs_posneg[[i]][["sig"]][["term_name"]], indgene_cor_sig_res_sub_dfs_posneg[[i]][["insig"]][["term_name"]]),
-                                          neg_log10p = c(indgene_cor_sig_res_sub_dfs_posneg[[i]][["sig"]][["neg_log10p"]], indgene_cor_sig_res_sub_dfs_posneg[[i]][["insig"]][["neg_log10p"]]),
-                                          recall = c(indgene_cor_sig_res_sub_dfs_posneg[[i]][["sig"]][["recall"]], indgene_cor_sig_res_sub_dfs_posneg[[i]][["insig"]][["recall"]]),
-                                          posneg = c(indgene_cor_sig_res_sub_dfs_posneg[[i]][["sig"]][["posneg"]], indgene_cor_sig_res_sub_dfs_posneg[[i]][["insig"]][["posneg"]]),
-                                          siginsig = c(rep("Significant", length(indgene_cor_sig_res_sub_dfs_posneg[[i]][["sig"]][["term_name"]])), rep("Insignificant", length(indgene_cor_sig_res_sub_dfs_posneg[[i]][["insig"]][["term_name"]]))))
+for(i in names(indgene_cor_pathway_res_sub)){
+  indgene_cor_pathway_res_sub_dfs_posneg_siginsig[[paste(i)]] <- data.frame(term_name = c(indgene_cor_pathway_res_sub_dfs_posneg[[i]][["sig"]][["term_name"]], indgene_cor_pathway_res_sub_dfs_posneg[[i]][["insig"]][["term_name"]]),
+                                          neg_log10p = c(indgene_cor_pathway_res_sub_dfs_posneg[[i]][["sig"]][["neg_log10p"]], indgene_cor_pathway_res_sub_dfs_posneg[[i]][["insig"]][["neg_log10p"]]),
+                                          recall = c(indgene_cor_pathway_res_sub_dfs_posneg[[i]][["sig"]][["recall"]], indgene_cor_pathway_res_sub_dfs_posneg[[i]][["insig"]][["recall"]]),
+                                          posneg = c(indgene_cor_pathway_res_sub_dfs_posneg[[i]][["sig"]][["posneg"]], indgene_cor_pathway_res_sub_dfs_posneg[[i]][["insig"]][["posneg"]]),
+                                          siginsig = c(rep("Significant", length(indgene_cor_pathway_res_sub_dfs_posneg[[i]][["sig"]][["term_name"]])), rep("Insignificant", length(indgene_cor_pathway_res_sub_dfs_posneg[[i]][["insig"]][["term_name"]]))))
 }
 
 # clean env
-rm(indgene_cor_sig_res_sub)
+rm(indgene_cor_pathway_res_sub)
 ```
 
 ## next, plots
 ```{r}
 # first, without combining sig/insig
 ## variables: x-axis = -log10p, size = recall, color = pos/neg
-ggplot(indgene_cor_sig_res_sub_dfs_posneg[["cl_tumtis"]][["sig"]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for Cell Line vs Tumor Tissue")) + labs(color = "Correlation", size = "Recall") + theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10))
-ggplot(indgene_cor_sig_res_sub_dfs_posneg[["cl_tumtis"]][["insig"]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for Cell Line vs Tumor Tissue")) + labs(color = "Correlation", size = "Recall") + theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10))
+ggplot(indgene_cor_pathway_res_sub_dfs_posneg[["cl_tumtis"]][["sig"]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for Cell Line vs Tumor Tissue")) + labs(color = "Correlation", size = "Recall") + theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10))
+ggplot(indgene_cor_pathway_res_sub_dfs_posneg[["cl_tumtis"]][["insig"]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for Cell Line vs Tumor Tissue")) + labs(color = "Correlation", size = "Recall") + theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10))
 
 # second, with (decided against using)
-#ggplot(indgene_cor_sig_res_sub_dfs_posneg_siginsig[["cl_tumtis"]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color = posneg, shape = siginsig)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for Cell Line vs Tumor Tissue")) + labs(color = "Correlation", size = "Recall") + theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10))
+#ggplot(indgene_cor_pathway_res_sub_dfs_posneg_siginsig[["cl_tumtis"]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color = posneg, shape = siginsig)) + geom_point(aes(size = recall)) + coord_flip() + xlab("GO Terms") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for Cell Line vs Tumor Tissue")) + labs(color = "Correlation", size = "Recall") + theme_bw() +theme(text = element_text(size=17)) + scale_size(range = c(5,10))
 ```
 
 ## loop through generating + exporting plots 
 ```{r}
-for(i in c("cl_tumtis", "cl_contis", "pdx_tumtis", "pdx_contis")){
+for(i in c("cl_tumtis", "cl_ndtis", "pdx_tumtis", "pdx_ndtis")){
   
   comparison <- i
   
   for(i in c("sig", "insig")){
     
-    title <- c("Cell Line vs Tumor Tissue", "Cell Line vs Control Tissue", "PDX vs Tumor Tissue", "PDX vs Control Tissue")
-    indgene_cor_sig_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]] <- str_trunc(indgene_cor_sig_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]], 30)
-    temp <- ggplot(indgene_cor_sig_res_sub_dfs_posneg[[comparison]][[i]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("Pathway") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", title[which(c("cl_tumtis", "cl_contis", "pdx_tumtis", "pdx_contis") == comparison)])) + labs(color = "Correlation", size = "Recall") + theme_bw() + theme(text = element_text(size=20, face = "bold"), axis.text.y = element_text(size = 20), legend.text = element_text(size = 22), legend.title = element_text(size = 25), axis.title = element_text(size = 25), title = element_text(size = 20)) + scale_size(range = c(5,10)) + guides(colour = guide_legend(override.aes = list(size=10)))
+    title <- c("Cell Line vs Tumor Tissue", "Cell Line vs Non-Disease Tissue", "PDX vs Tumor Tissue", "PDX vs Non-Disease Tissue")
+    indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]] <- str_trunc(indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]], 30)
+    temp <- ggplot(indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("Pathway") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", title[which(c("cl_tumtis", "cl_ndtis", "pdx_tumtis", "pdx_ndtis") == comparison)])) + labs(color = "Correlation", size = "Recall") + theme_bw() + theme(text = element_text(size=20, face = "bold"), axis.text.y = element_text(size = 20), legend.text = element_text(size = 22), legend.title = element_text(size = 25), axis.title = element_text(size = 25), title = element_text(size = 20)) + scale_size(range = c(5,10)) + guides(colour = guide_legend(override.aes = list(size=10)))
     
     ggexport(temp, filename = paste("../plots/ind_gene/dotplot/final/", comparison, "_", i, ".png", sep = ""), width = 1100, height = 700)
   }

@@ -152,7 +152,7 @@ ggsave(filename = "../plots/tags_violin/allcltomatchtum.png",
           width = 13, height = 7, units = "in")
 
 ggplot(tis_gene_cor_con_vio_in, aes(x=tissue, y=corres, color=tissue)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Control Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Control Tissue") + ylim(0.4,0.9)
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Non-Disease Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Control Tissue") + ylim(0.4,0.9)
 ggsave(filename = "../plots/tags_violin/allcltomatchcon.png", 
           width = 13, height = 7, units = "in")
 ```
@@ -167,7 +167,7 @@ source("../scripts/functions/geom_split_violin.R")
 ```{r}
 # make combined obj with tum and con
 tis_gene_cor_both_vio_in <- rbind(tis_gene_cor_tum_vio_in, tis_gene_cor_con_vio_in)
-tis_gene_cor_both_vio_in$Type <- c(rep("Tumor", length(tis_gene_cor_tum_vio_in$corres)), rep("Control", length(tis_gene_cor_con_vio_in$corres)))
+tis_gene_cor_both_vio_in$Type <- c(rep("Tumor", length(tis_gene_cor_tum_vio_in$corres)), rep("Non-Disease", length(tis_gene_cor_con_vio_in$corres)))
 tis_gene_cor_both_vio_in <- tis_gene_cor_both_vio_in[tis_gene_cor_both_vio_in$tissue != "Nerve",]
 tis_gene_cor_both_vio_in <- tis_gene_cor_both_vio_in[tis_gene_cor_both_vio_in$tissue != "Salivary Gland",]
 
@@ -318,20 +318,20 @@ for(i in c("tum", "con")){
 # add PDX vs brain cl performance
 ## first, how they compare in brain tissue
 ```{r}
-# make TPM obj for just brain CLs
-brain_cl_tpm <- cl_tpm[,colnames(cl_tpm) %in% sample_master_meta[sample_master_meta$tissue_coerced == "Brain",]$rse_sampname]
+# make TPM obj for just GBM CLs
+GBM_cl_tpm <- cl_tpm[,colnames(cl_tpm) %in% sample_master_meta[grep("Grade Iv|Glioblastoma", sample_master_meta$disease),]$rse_sampname]
 
 # run function
-# computes performance of brain cls vs brain pdxs in correlating to brain tissue in brain TAGs
-corbytis_pdxcl_tum_res <- tisgenesetcor(cbind(brain_cl_tpm, pdx_tpm), tum_tissue_tpm, tissue = "brain")
+# computes performance of GBM cls vs GBM pdxs in correlating to brain tissue in brain TAGs
+corbytis_pdxcl_tum_res <- tisgenesetcor(cbind(GBM_cl_tpm, pdx_tpm), tum_tissue_tpm, tissue = "brain")
 
-corbytis_pdxcl_con_res <- tisgenesetcor(cbind(brain_cl_tpm, pdx_tpm), con_tissue_tpm, tissue = "brain")
+corbytis_pdxcl_con_res <- tisgenesetcor(cbind(GBM_cl_tpm, pdx_tpm), con_tissue_tpm, tissue = "brain")
 ```
 
 ### visualize as violin plot
 #### first, need to make the data length-wise
 ```{r prep data for violin plot}
-originrep <- c(rep("CL", ncol(brain_cl_tpm)), rep("PDX", ncol(pdx_tpm)))
+originrep <- c(rep("CL", ncol(GBM_cl_tpm)), rep("PDX", ncol(pdx_tpm)))
 
 tis_gene_cor_pdxcl_tum_vio_in <- data.frame(corres = corbytis_pdxcl_tum_res$cor, type = originrep)
 tis_gene_cor_pdxcl_tum_vio_in$type[tis_gene_cor_pdxcl_tum_vio_in$type == "CL"] <- "Cell Line"
@@ -343,13 +343,21 @@ tis_gene_cor_pdxcl_con_vio_in$type[tis_gene_cor_pdxcl_con_vio_in$type == "CL"] <
 #### next, generate plots
 ```{r generate violin plot}
 library(ggplot2)
-=ggplot(tis_gene_cor_pdxcl_tum_vio_in, aes(x=type, y=corres, color=type)) + geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue in Brain TAGs") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15))
+ggplot(tis_gene_cor_pdxcl_tum_vio_in, aes(x=type, y=corres, color=type)) + geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue in Brain-Specific Genes") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/tags_violin/brainclpdxtomatchtum.png", 
-          width = 5, height = 6)
+          width = 6, height = 7)
 
-ggplot(tis_gene_cor_pdxcl_con_vio_in, aes(x=type, y=corres, color=type)) + geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Control Tissue in Brain TAGs") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15))
+print("PDX median correlation to tumor tissue rho is")
+median(tis_gene_cor_pdxcl_tum_vio_in[tis_gene_cor_pdxcl_tum_vio_in$type == "PDX",]$corres) - median(tis_gene_cor_pdxcl_tum_vio_in[tis_gene_cor_pdxcl_tum_vio_in$type == "Cell Line",]$corres)
+print("greater than Cell Line median")
+
+ggplot(tis_gene_cor_pdxcl_con_vio_in, aes(x=type, y=corres, color=type)) + geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Non-Disease Tissue in Brain-Specific Genes") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/tags_violin/brainclpdxtomatchcon.png", 
-          width = 5, height = 6)
+          width = 6, height = 7)
+
+print("PDX median correlation to non-disease tissue rho is")
+median(tis_gene_cor_pdxcl_con_vio_in[tis_gene_cor_pdxcl_con_vio_in$type == "PDX",]$corres) - median(tis_gene_cor_pdxcl_con_vio_in[tis_gene_cor_pdxcl_con_vio_in$type == "Cell Line",]$corres)
+print("greater than Cell Line median")
 ```
 
 #### Wilcoxon rank sum test on these two groups
@@ -378,7 +386,7 @@ tis_gene_cor_pdxcl_tum_v_plot +
   stat_pvalue_manual(stat.test_tag, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
 #ggsave(filename = "../plots/tags_violin/brainclpdxtomatchtum.png", 
-          width = 5, height = 6)
+         # width = 5, height = 6)
 
 # computation - control
 stat.test_tag <- tis_gene_cor_pdxcl_stat %>% 
@@ -397,7 +405,7 @@ tis_gene_cor_pdxcl_con_v_plot +
   stat_pvalue_manual(stat.test_tag, tip.length = 0) +
   labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
 #ggsave(filename = "../plots/tags_violin/brainclpdxtomatchcon.png", 
-          width = 5, height = 6)
+         # width = 5, height = 6)
 ```
 
 ## next, how they compare in recapitulating expression across tissue TAGs
@@ -413,7 +421,7 @@ for(i in c("tum", "con")){
     model <- i
     
     if(i == "cl"){
-      x <- brain_cl_tpm
+      x <- GBM_cl_tpm
     }else if(i == "pdx"){
       x <- pdx_tpm
     }
@@ -470,13 +478,16 @@ tis_gene_cor_pdxcl_alltum_vio_in <- tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_co
 #### run fun to make objects
 ```{r}
 library(ggplot2)
-ggplot(tis_gene_cor_pdxcl_alltum_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain Model to Each Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model")
+ggplot(tis_gene_cor_pdxcl_alltum_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of GBM Models to Tissues in Each Tissue's Specific Genes") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/tags_violin/brainclpdxtoalltum.png", 
-          width = 5000, height = 2000, units = "px")
+          width = 5000, height = 2300, units = "px")
 
-ggplot(tis_gene_cor_pdxcl_allcon_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of Each Brain Model to Each Tissue Type") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model")
+range(tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_cor_pdxcl_alltum_vio_in$type == "Cell Line",]$cor)
+range(tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_cor_pdxcl_alltum_vio_in$type == "PDX",]$cor)
+
+ggplot(tis_gene_cor_pdxcl_allcon_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of GBM Models to Tissues in Each Tissue's Specific Genes") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/tags_violin/brainclpdxtoallcon.png", 
-          width = 13, height = 7)
+          width = 5000, height = 2300, units = "px")
 ```
 
 # make heatmap to summarize all cls compared to each tissue/TAG
@@ -561,7 +572,7 @@ mix_top100cl <- mix_topcl$sra[1:100]
 
 # make new correlation matrix with both tissue types
 corbytis_alltis_allcl_df <- cbind(corbytis_tum_allcl_df, corbytis_con_allcl_df)
-colnames(corbytis_alltis_allcl_df) <- c(paste(stringr::str_to_title(colnames(corbytis_tum_allcl_df)), "Tumor"), paste("Control", stringr::str_to_title(colnames(corbytis_con_allcl_df))))
+colnames(corbytis_alltis_allcl_df) <- c(paste(stringr::str_to_title(colnames(corbytis_tum_allcl_df)), "Tumor"), paste("Non-Disease", stringr::str_to_title(colnames(corbytis_con_allcl_df))))
 
 corbytis_alltis_100cl_df <- corbytis_alltis_allcl_df[rownames(corbytis_alltis_allcl_df) %in% mix_top100cl,]
 corbytis_alltis_100cl_df <- corbytis_alltis_100cl_df[match(mix_top100cl, rownames(corbytis_alltis_100cl_df)),]
@@ -575,7 +586,7 @@ alltis_annorow$`rownames(anno_col)` <- NULL
 colnames(alltis_annorow) <- "Cell Line Tumor Origin "
 
 ## anno col = specifies whether tissue is control or tum
-alltis_annocol <- data.frame("Tissue Type" = c(rep("Tumor", length(colnames(corbytis_tum_allcl_df))), rep("Control", length(colnames(corbytis_con_allcl_df)))))
+alltis_annocol <- data.frame("Tissue Type" = c(rep("Tumor", length(colnames(corbytis_tum_allcl_df))), rep("Non-Disease", length(colnames(corbytis_con_allcl_df)))))
 rownames(alltis_annocol) <- colnames(corbytis_alltis_100cl_df)
 colnames(alltis_annocol) <- "Tissue Type"
 
@@ -583,7 +594,7 @@ colnames(alltis_annocol) <- "Tissue Type"
 alltis_top100cl_names <- master_sub[match(mix_top100cl, master_sub$SRA),]$common_name
 
 # heatmap!
-ann_colors <- list("Tissue Type" = c(Control = "darkblue", Tumor = "orange")) # make tissue type anno color consistent
-pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors)
+ann_colors <- list("Tissue Type" = c('Non-Disease' = "darkblue", Tumor = "orange")) # make tissue type anno color consistent
+pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors, fontface = "bold")
 
 ```

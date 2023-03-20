@@ -3,6 +3,8 @@
 .RData
 .Ruserdata
 data/recount3/*
+data/genepathways/
+data/rse_subsets/
 data/fullcor.rds
 scripts/processing
 scripts/SCRATCH.R
