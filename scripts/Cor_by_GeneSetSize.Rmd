@@ -10,30 +10,42 @@ output: html_document
 ```{r source load}
 source("../scripts/functions/tissuecormatch.R") # change to where you have this function script saved
 source("../scripts/functions/tissuecormatch_median.R")
+#add to docker
+library(ggplot2)
+library(ComplexHeatmap) #no package called ‘ComplexHeatmap’
+library(matrixStats)
 ```
 
 # I copied full (63856 genes) rses and tpm from my recount3 download folder into a data/rse_subsets/63856/ folder to be in the same root location as the subsets, in ../63856/tpm and ../63856/rse folders
+```{r}
+sample_master_meta <- readRDS("../data/sample_master_meta.rds")
+```
 
 # run correlation fun
 ```{r run fun}
+
 for(i in c(100, 1000, 5000, 10000)){
   sub <- i
   for(i in c("purinc", "purexc")){
     pur <- i
     for(i in c("gtex", "tcga")){
       var <- i
-      
-      tissuecormatch(rootfilepath = "../data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = sub, pur = pur, var = var, app_by = "disease", save = TRUE, savefilepath = "../data/rse_subsets/")
+      #change "../data/rse_subsets/" to "../data/" for input and then add "rse_subsets" or "recount3" 
+      tissuecormatch(rootfilepath = "../data/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = sub, pur = pur, var = var, app_by = "disease", save = TRUE, savefilepath = "../data/")
     }
   }
 }
+gc()
 # making object for ALL model sources
-tissuecormatch(rootfilepath = "../data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c", "pdx"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "../data/rse_subsets/")
+tissuecormatch(rootfilepath = "../data/", row_sources = c("bone_c", "ccle", "hpa_c", "pdx"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "../data/")
+gc()
 
 # now just cell lines
-tissuecormatch(rootfilepath = "../data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "../data/rse_subsets/")
+tissuecormatch(rootfilepath = "../data/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = 63856, app_by = "disease", save = TRUE, savefilepath = "../data/")
 
 rm(sub, pur, var)
+gc()
+
 ```
 
 # visualize correlation in a table
@@ -51,7 +63,7 @@ for(i in c(100, 1000, 5000, 10000)){
     }
   }
 }
-cor_temp <- readRDS("../data/rse_subsets/63856/corres/cor_dismatch_res_allCL.rds")[["dfo_summary"]]
+cor_temp <- readRDS("../data/recount3/corres/cor_dismatch_res_allCL.rds")[["dfo_summary"]]
 percent_map_to_origin <- c(percent_map_to_origin, cor_temp$same_as_origin/(cor_temp$different + cor_temp$same_as_origin))
       id <- c(id, "all")
 
@@ -88,7 +100,7 @@ tissuecormatch_med_res <- data.frame(
   tenK_E_T = tissuecormatch_median(filepath = "../data/rse_subsets/", 10000, "purexc", "tcga"),
   tenK_I_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 10000, "purinc", "gtex"),
   tenK_E_G = tissuecormatch_median(filepath = "../data/rse_subsets/", 10000, "purexc", "gtex"),
-  ALL = tissuecormatch_median(filepath = "../data/rse_subsets/", 63856)
+  ALL = tissuecormatch_median(filepath = "../data/recount3/", 63856)
 )
 
 colnames(tissuecormatch_med_res) <- c("oneH_I_T", "oneH_E_T", "oneH_I_G", "oneH_E_G", "oneK_I_T", "oneK_E_T", "oneK_I_G", "oneK_E_G", "fiveK_I_T", "fiveK_E_T", "fiveK_I_G", "fiveK_E_G", "tenK_I_T", "tenK_E_T", "tenK_I_G", "tenK_E_G", "ALL")
@@ -125,20 +137,27 @@ library(matrixStats)
 
 subset_medians <- c()
 subsets <- c()
-for(i in c(100, 1000, 5000, 10000)){
+for(i in c(100, 1000, 5000, 10000)){ ###ERROR argument "savefilepath" is missing, with no defaultargume ##double checknt "savefilepath" is missing, with no default
   num <- i
   for(i in c("purinc", "purexc")){
     pur <- i
     for(i in c("tcga", "gtex")){
       var <- i
       
-      subset_medians <- c(subset_medians, median(rowMedians(tissuecormatch(rootfilepath = "../data/rse_subsets/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = num, pur = pur, var = var, app = FALSE, save = FALSE)[["fullcor"]])))
+      subset_medians <- c(subset_medians, median(rowMedians(tissuecormatch(rootfilepath = "../data/", row_sources = c("bone_c", "ccle", "hpa_c"), col_sources = c("tcga", "gtex", "hpa_t", "bone_n", "bone_t"), sub = num, pur = pur, var = var, app = FALSE, save = FALSE)[["fullcor"]])))
       
       subsets <- c(subsets, paste(num, pur, var, sep = "_"))
     }
   }
 }
+
+##Save
+saveRDS(subset_gene_lists, "../data/rse_subsets/subset_gene_lists.rds")
+saveRDS(subset_medians, "../data/rse_subsets/subset_medians.rds")
+saveRDS(subsets, "../data/rse_subsets/subsets.rds")
+gc()
 ```
+read in 
 
 ```{r}
 fullcor <- cor(cbind(gtex_tpm, tcga_tpm, bone_n_tpm, bone_t_tpm, hpa_t_tpm), cbind(ccle_tpm, pdx_tpm, hpa_c_tpm, bone_c_tpm), method = "spearman") # this object takes a while, only build if not already in env/exported
@@ -162,7 +181,7 @@ subset_table_lp[grep("exc", subset_table_lp$name),]$Purity <- "exc"
 
 # plot
 library(ggplot2)
-ggplot(subset_table_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line() + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(aes(yintercept=subset_medians[17]), color="darkslategray", linetype="dashed")
+ggplot(subset_table_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line() + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(aes(yintercept=subset_medians[17]), color="darkslategray", linetype="dashed") ##ERROR 
 
 ggsave("../plots/medcortoorigin_fromfullcor.png") # this is used in final over other one
 ```
@@ -222,8 +241,6 @@ rownames(tissuecormatch_med_res_annorow) <- c(substr(rownames(tissuecormatch_med
 ```
 
 ```{r}
-library(ComplexHeatmap)
-
 # column annotations
 column_ha <- HeatmapAnnotation(df = as.data.frame(t(tissuecormatch_med_res_annorow[23:25,])),
                                col = list("Subset Size" = c("  100" = "#C86991", " 1000" = "#FEE440", " 5000" = "#328651", "10000" = "#00BBF9", "63856" = "#9B5DE5"),

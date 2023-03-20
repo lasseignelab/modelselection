@@ -4,17 +4,26 @@
 # prerequisite files:
 * sample_master_meta: generated from MetaTable RMD script using the RSE objects for each sample group, which themselves are generated from the DataDownload RMD script.
 * all sample group tpm files: the tpm objects will be generated as files if the DataDownload script is run, or can be created by running `x_tpm <- assays(x_rse)$TPM` using an RSE where x is your source of choice
-  
-# generate full correlation object
-```{r generate fullcor obj}
-fullcor <- cor(cbind(gtex_tpm, tcga_tpm, bone_n_tpm, bone_t_tpm, hpa_t_tpm), cbind(ccle_tpm, pdx_tpm, hpa_c_tpm, bone_c_tpm), method = "spearman") # note: this does not need to be built if built in Cor_by_GeneSetSize.Rmd
-saveRDS(fullcor, "../data/fullcor.rds") # so it doesn't need to be built again
+
+load in packages
+```{r}
+library(ggplot2)
+library(ggfortify)
+library(mixOmics)
+library(PLSDAbatch)
+library(edgeR)
+library(matrixStats)
+library(pheatmap)
+library(rstatix)
+library(coin)
+library(ggpubr)
 ```
+
 
 ```{r}
 # to read in instead
-fullcor <- readRDS("../data/fullcor.rds")
 sample_master_meta <- readRDS("../data/sample_master_meta.rds")
+fullcor <- readRDS("../data/fullcor.rds")
 ```
 
 # first, make subsets of correlation matrix, to brain samples, then to just PDX and just CL
@@ -52,19 +61,16 @@ fullcor_gbm_pdx <- fullcor_brain[, colnames(fullcor_brain) %in% pdx_samples]
 
 # read in TPM
 ```{r read tpm}
-ccle_tpm <- readRDS("../data/rse_subsets/63856/tpm/ccle_tpm.rds")
-hpa_c_tpm <- readRDS("../data/rse_subsets/63856/tpm/hpa_c_tpm.rds")
-tcga_tpm <- readRDS("../data/rse_subsets/63856/tpm/tcga_tpm.rds")
-gtex_tpm <- readRDS("../data/rse_subsets/63856/tpm/gtex_tpm.rds")
-hpa_t_tpm <- readRDS("../data/rse_subsets/63856/tpm/hpa_t_tpm.rds")
-pdx_tpm <- readRDS("../data/rse_subsets/63856/tpm/pdx_tpm.rds")
+ccle_tpm <- readRDS("../data/recount3/tpm/ccle_tpm.rds")
+hpa_c_tpm <- readRDS("../data/recount3/tpm/hpa_c_tpm.rds")
+tcga_tpm <- readRDS("../data/recount3/tpm/tcga_tpm.rds")
+gtex_tpm <- readRDS("../data/recount3/tpm/gtex_tpm.rds")
+hpa_t_tpm <- readRDS("../data/recount3/tpm/hpa_t_tpm.rds")
+pdx_tpm <- readRDS("../data/recount3/tpm/pdx_tpm.rds")
 ```
 
 # PCA
 ```{r pca}
-library(ggplot2)
-library(ggfortify)
-
 # make one big tpm object for PC generation
 ## I would just make the full tpm obj then subset but it's too big for local, takes forever
 gtex_tpm_b <- gtex_tpm[,colnames(gtex_tpm) %in% brain_samples]
@@ -77,7 +83,6 @@ brain_tpm <- cbind(tcga_tpm_b, gtex_tpm_b, hpa_t_tpm_b, ccle_tpm_b, hpa_c_tpm_b,
  
 # need to pre-filter for PCA to work 
 ## try filterByExpr in edgeR
-library(edgeR)
 keep <- filterByExpr(brain_tpm, min.count = 1, min.total.count = 1)
 brain_tpm_filt <- brain_tpm[keep,] # only about 5K genes unless I default parameter stringency, this now leaves 17K
 
@@ -110,14 +115,13 @@ brain_cl_pca_meta <- data.frame(t(brain_cl_tpm_filt))
 brain_cl_pca_meta$cl <- sample_brain_meta[sample_brain_meta$rse_sampname %in% cell_line_samples,]$cell_line
 
 # make pca visual
+png("../plots/pca_brain_cl.png")
 autoplot(brain_cl_pcares, data = brain_cl_pca_meta, colour = "cl")
+dev.off()
 ```
 
 # now the fancy PCAs
 ```{r rug plot}
-library(mixOmics)
-library(PLSDAbatch)
-
 all_pca <- pca(t(brain_tpm_filt), ncomp = 3, scale = TRUE)
 
 # making origin factor
@@ -133,15 +137,18 @@ brain_fact_cohort <- factor(brain_meta_sub)
 # making visual
 ## by just origin type
 colorset <- rainbow(4)
-#png("../plots/pca_origintype.png")
+png("../plots/pca_origintype.png" )
 Scatter_Density(object = all_pca, batch = brain_fact_origin, color.set = colorset, batch.legend.title = "Origin Type", legend.cex = 1.5, legend.title.cex = 1.6, title.cex = 1.6)
-#dev.off() # NOTE: for some reason with png() the image quality is always bad, even when I scale up dimensions. Better off generating plot in R script then >  image
+dev.off() # NOTE: for some reason with png() the image quality is always bad, even when I scale up dimensions. Better off generating plot in R script then >  image
 
 # by data source
 colorset <- rainbow(6)
+png("../plots/pca_datacohort.png" )
 Scatter_Density(object = all_pca, batch = brain_fact_cohort, color.set = colorset, batch.legend.title = "Data Cohort")
+dev.off()
+png("../plots/pca_brain_origin.png" )
 Scatter_Density(object = all_pca, batch = brain_fact_cohort, color.set = colorset, trt = brain_fact_origin, batch.legend.title = "Data Cohort", trt.legend.title = "Data Type")
-
+dev.off()
 # I kinda want to see what the split in control tissue is led by
 brain_meta_sub <- matrix(sample_brain_meta$sex)
 rownames(brain_meta_sub) <- sample_brain_meta$rse_sampname
@@ -156,7 +163,6 @@ rm(all_pca)# be careful if you still need this, obj takes a while to generate
 
 # next, compare median correlation to GBM tissue, all brain tumor tissue, and brain control tissue
 ```{r}
-library(matrixStats)
 # for cell lines
 ## all
 fullcor_brain_cl_sub <- data.frame(GBM = colMedians(as.matrix(fullcor_brain_cl[rownames(fullcor_brain_cl) %in% gbm_samples,])))
@@ -192,7 +198,7 @@ Correlation metrics:
 
 # how many of each correlate highest with tissue of origin?
 ```{r} 
-cor_dismatch_res_all <- readRDS("../data/rse_subsets/63856/corres/cor_dismatch_res_all.rds")
+cor_dismatch_res_all <- readRDS("../data/recount3/corres/cor_dismatch_res_all.rds")
 cor_bestmatch <- cor_dismatch_res_all[["alltoptissue"]]
 cor_bestmatch_cl <- cor_bestmatch[cor_bestmatch$sample %in% cell_line_samples,]
 length(cor_bestmatch_cl[cor_bestmatch_cl$samp_origin == cor_bestmatch_cl$res_top_first,]$sample) # 4
@@ -221,7 +227,6 @@ other correlations for cell lines:
 # heatmaps
 ```{r heatmaps}
 # first, heatmap of all tissue to all model
-library(pheatmap)
 
 # annotating rows and columns
 annotation_col <- data.frame(Model = sample_brain_meta[grep("Cell Line|PDX", sample_brain_meta$origin),]$origin)
@@ -231,8 +236,9 @@ rownames(annotation_row) <- sample_brain_meta[grep("Tumor Tissue|Normal Tissue",
 annotation_row$Tissue[annotation_row$Tissue == "Normal Tissue"] <- "Control Tissue"
 colnames(annotation_row) <- "Brain Tissue Type"
 
+png("../plots/fullcor_brain_heatmap.png" )
 pheatmap(fullcor_brain, annotation_col = annotation_col, annotation_row = annotation_row, show_rownames = FALSE, show_colnames = FALSE, color = colorRampPalette(c("yellow", "red"))(200))
-
+dev.off()
 # now heatmap of median for each subset
 ## making cor matrix subsets
 gbmcor <- fullcor_brain[rownames(fullcor_brain) %in% gbm_samples,]
@@ -259,7 +265,6 @@ dev.off()
 
 # violin plot
 ```{r}
-library(matrixStats)
 # let's focus in on A-172, u87mg, u251mg, and shsy5y for cell lines
 # first, pulling the selected cell lines + pdx's from fullcor, then making sure they're ordered
 brain_clsub_cor <- fullcor[,colnames(fullcor) %in% c(cell_line_samples, pdx_samples)]
@@ -278,7 +283,7 @@ cl_type <- sample_brain_meta[sample_brain_meta$rse_sampname %in% clsub_pdx_sampl
 cl_pdx_violin <- data.frame(tum_med_cor = brain_clsub_tum_med, con_med_cor = brain_clsub_con_med, type = origin, cl = cl_type)
 rownames(cl_pdx_violin) <- clsub_pdx_samples
 
-library(ggplot2)
+
 # Basic violin plot
 ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model to Brain Control Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 15))
@@ -298,7 +303,6 @@ tum_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)
 # Wilcoxon rank sum test on these two groups
 ```{r}
 # Question : Is there any significant difference between pdx and cell line median correlation to matched tissue?
-library(rstatix)
 # computation - tumor
 stat.test <- cl_pdx_violin %>% 
   rstatix::wilcox_test(tum_med_cor ~ type) %>%
@@ -306,16 +310,14 @@ stat.test <- cl_pdx_violin %>%
 stat.test
 
 # effect size
-library(coin)
 cl_pdx_violin %>% wilcox_effsize(tum_med_cor ~ type)
 
 # report
-library(ggpubr)
 stat.test <- stat.test %>% add_xy_position(x = "group")
 
-tum_violin + 
-  stat_pvalue_manual(stat.test, tip.length = 0) +
-  labs(subtitle = get_test_label(stat.test, detailed = TRUE))
+#tum_violin + #####Error: object 'tum_violin' not found
+#  stat_pvalue_manual(stat.test, tip.length = 0) +
+#  labs(subtitle = get_test_label(stat.test, detailed = TRUE))
 
 tum_violin_alt + 
   stat_pvalue_manual(stat.test, tip.length = 0) +
@@ -331,15 +333,13 @@ stat.test <- cl_pdx_violin %>%
 stat.test
 
 # effect size
-library(coin)
 cl_pdx_violin %>% wilcox_effsize(con_med_cor ~ type)
 
 # report
-library(ggpubr)
 stat.test <- stat.test %>% add_xy_position(x = "group")
-con_violin + 
-  stat_pvalue_manual(stat.test, tip.length = 0) +
-  labs(subtitle = get_test_label(stat.test, detailed = TRUE))
+#con_violin +  ####Error: object 'con_violin' not found
+#  stat_pvalue_manual(stat.test, tip.length = 0) +
+#  labs(subtitle = get_test_label(stat.test, detailed = TRUE))
 
 con_violin_alt + 
   stat_pvalue_manual(stat.test, tip.length = 0) +
@@ -351,7 +351,7 @@ con_violin_alt +
 # violin plot how the two groups each recapitulated across tissue types
 ```{r violin across tissues}
 # read in object with each model sample's median corr to each tissue
-cor_dismatch_res_all <- readRDS("../data/rse_subsets/63856/corres/cor_dismatch_res_all.rds")
+cor_dismatch_res_all <- readRDS("../data/recount3/corres/cor_dismatch_res_all.rds")
 cor_dismatch_res_bytis <- cor_dismatch_res_all$fullcorapp
 
 # split by model
@@ -447,7 +447,6 @@ ggsave(filename = "../plots/vio_braincltoeachcon.png",
 # Wilcoxon rank sum test between models for each tissue
 ```{r}
 # Question : Is there any significant difference between pdx and cell line median correlation to EACH tissue?
-library(rstatix)
 cor_dismatch_stattest_alltis <- list()
 # they have different tissues so I'll do sep loops
 for(i in unique(cor_dismatch_cantis_long$tissue)){

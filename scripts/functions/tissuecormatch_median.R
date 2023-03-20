@@ -2,7 +2,7 @@
 tissuecormatch_median <- function(filepath, subsize = c(100, 1000, 5000, 10000, 63856), pur = c("purinc", "purexc", NA), var = c("tcga", "gtex", NA)){
   # first, pull the corresponding correlation table
   if(subsize == 63856){
-    cor_temp <- readRDS(paste(filepath, "63856/corres/cor_dismatch_res_allCL.rds", sep = ""))
+    cor_temp <- readRDS(paste(filepath, "corres/cor_dismatch_res_allCL.rds", sep = ""))
   }else{
     cor_temp <- readRDS(paste(filepath, subsize, "/", pur, "/", var, "var/corres/cor_dismatch_", pur, "_", var, "var_res_", subsize, ".rds", sep = ""))
   }  
