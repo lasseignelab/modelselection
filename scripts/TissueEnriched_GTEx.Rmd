@@ -1,17 +1,36 @@
 # incorporating GTEx tissue-specific genes (https://maayanlab.cloud/Harmonizome/dataset/GTEx+Tissue+Gene+Expression+Profiles)
 
+load in packages
+```{r}
+#library(qusage)
+library(AnnotationDbi)
+library(org.Hs.eg.db)
+library(ggplot2)
+library(tidyverse)
+library(rstatix)
+library(ggpubr)
+library(coin)
+library(pheatmap)
+```
+
+```{r}
+# tissue gene set cor fun
+source("../scripts/functions/tisgenesetcor.R")
+# geom_split_violin fun
+source("../scripts/functions/geom_split_violin.R")
+
+```
+
+
 # requires qusage package for reading in GMTs
 ```{r read in up and down genes for each tissue}
-gtex_up_tissue_genes <- qusage::read.gmt("../data/gene_set_library_up_crisp.gmt")
-gtex_down_tissue_genes <- qusage::read.gmt("../data/gene_set_library_dn_crisp.gmt")
+gtex_up_tissue_genes <- read.gmt("../data/gene_set_library_up_crisp.gmt")
+gtex_down_tissue_genes <- read.gmt("../data/gene_set_library_dn_crisp.gmt")
 sample_master_meta <- readRDS("../data/sample_master_meta.rds")
 ```
 
 # I need ens IDs for these genes
 ```{r adding ens IDs}
-library(AnnotationDbi)
-library(org.Hs.eg.db)
-
 for(i in names(gtex_up_tissue_genes)){
   out <- data.frame(genesym = gtex_up_tissue_genes[[paste(i)]])
   out$ens <- mapIds(org.Hs.eg.db, keys = out$genesym, column = "ENSEMBL", keytype = "SYMBOL", multiVals = "first")
@@ -32,7 +51,7 @@ for(i in names(gtex_up_tissue_genes)){ # up and down have the same name set
 
 # clear env
 rm(out, i)
-rm(gtex_down_tissue_genes, gtex_up_tissue_genes) # optional
+#rm(gtex_down_tissue_genes, gtex_up_tissue_genes) # optional
 ```
 # next, subset this nested list to only the cell line tissue origins represented
 ```{r list subset}
@@ -64,10 +83,7 @@ gtex_tissues_fin <- gtex_tissues_fin[-1]
 rm(gtex_tissues_cap, gtex_tissues_exc, cellline_tissues, i)
 ```
 
-# now, use function to correlate x by y with method including gene set
-```{r tissue gene set cor fun}
-source("../scripts/functions/tisgenesetcor.R")
-```
+# now, use function (tisgenesetcor.R) to correlate x by y with method including gene set
 
 # make tpm objs to run fun
 ## pull in tpm matrices
@@ -145,7 +161,6 @@ tis_gene_cor_con_vio_in <- tis_gene_cor_con_vio_in[tis_gene_cor_con_vio_in$tissu
 
 ## next, generate plots
 ```{r generate violin plot}
-library(ggplot2)
 ggplot(tis_gene_cor_tum_vio_in, aes(x=tissue, y=corres, color=tissue)) + 
   geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Tumor Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Tumor Tissue") + ylim(0.4,0.9)
 ggsave(filename = "../plots/tags_violin/allcltomatchtum.png", 
@@ -158,11 +173,6 @@ ggsave(filename = "../plots/tags_violin/allcltomatchcon.png",
 ```
 
 # split violin
-## geom_split_violin fun
-```{r}
-source("../scripts/functions/geom_split_violin.R")
-```
-
 # plot split
 ```{r}
 # make combined obj with tum and con
@@ -178,10 +188,6 @@ ggsave(filename = "../plots/tags_violin/allcltomatchboth.png",
 #### Wilcoxon rank sum test on some of these groups
 ```{r}
 # Question : Is there any significant difference between pdx and cell line median correlation to matched tissue when only considering TAGs?
-library(tidyverse)
-library(rstatix)
-library(ggpubr)
-library(coin)
 
 # make input object
 tis_gene_cor_stat <- list()
@@ -295,7 +301,6 @@ for(i in gtex_tissues_fin){
 
 ## make and export a buncha violin plots
 ```{r}
-library(ggplot2)
 violin_outputs <- list()
 for(i in c("tum", "con")){
   type <- i
@@ -342,7 +347,6 @@ tis_gene_cor_pdxcl_con_vio_in$type[tis_gene_cor_pdxcl_con_vio_in$type == "CL"] <
 
 #### next, generate plots
 ```{r generate violin plot}
-library(ggplot2)
 ggplot(tis_gene_cor_pdxcl_tum_vio_in, aes(x=type, y=corres, color=type)) + geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue in Brain-Specific Genes") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/tags_violin/brainclpdxtomatchtum.png", 
           width = 6, height = 7)
@@ -363,11 +367,6 @@ print("greater than Cell Line median")
 #### Wilcoxon rank sum test on these two groups
 ```{r}
 # Question : Is there any significant difference between pdx and cell line median correlation to matched tissue when only considering TAGs?
-library(tidyverse)
-library(rstatix)
-library(ggpubr)
-library(coin)
-
 # make input object
 tis_gene_cor_pdxcl_stat <- data.frame(tum_med_cor = tis_gene_cor_pdxcl_tum_vio_in$corres, con_med_cor = tis_gene_cor_pdxcl_con_vio_in$corres, type = tis_gene_cor_pdxcl_tum_vio_in$type)
 
@@ -381,12 +380,13 @@ stat.test_tag
 tis_gene_cor_pdxcl_stat %>% wilcox_effsize(tum_med_cor ~ type)
 
 # report
-stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
-tis_gene_cor_pdxcl_tum_v_plot + 
-  stat_pvalue_manual(stat.test_tag, tip.length = 0) +
-  labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
+#stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
+#tis_gene_cor_pdxcl_tum_v_plot + #Error: object 'tis_gene_cor_pdxcl_tum_v_plot' not found
+#tis_gene_cor_pdxcl_tum_vio_in + #Error: non-numeric argument to binary operator
+#  stat_pvalue_manual(stat.test_tag, tip.length = 0) +
+#  labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
 #ggsave(filename = "../plots/tags_violin/brainclpdxtomatchtum.png", 
-         # width = 5, height = 6)
+#          width = 5, height = 6)
 
 # computation - control
 stat.test_tag <- tis_gene_cor_pdxcl_stat %>% 
@@ -395,15 +395,13 @@ stat.test_tag <- tis_gene_cor_pdxcl_stat %>%
 stat.test_tag
 
 # effect size
-library(coin)
 tis_gene_cor_pdxcl_stat %>% wilcox_effsize(con_med_cor ~ type)
 
 # report
-library(ggpubr)
-stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
-tis_gene_cor_pdxcl_con_v_plot + 
-  stat_pvalue_manual(stat.test_tag, tip.length = 0) +
-  labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
+#stat.test_tag <- stat.test_tag %>% add_xy_position(x = "group")
+#tis_gene_cor_pdxcl_con_v_plot + 
+#  stat_pvalue_manual(stat.test_tag, tip.length = 0) +
+#  labs(subtitle = get_test_label(stat.test_tag, detailed = TRUE))
 #ggsave(filename = "../plots/tags_violin/brainclpdxtomatchcon.png", 
          # width = 5, height = 6)
 ```
@@ -477,7 +475,6 @@ tis_gene_cor_pdxcl_alltum_vio_in <- tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_co
 
 #### run fun to make objects
 ```{r}
-library(ggplot2)
 ggplot(tis_gene_cor_pdxcl_alltum_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of GBM Models to Tissues in Each Tissue's Specific Genes") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/tags_violin/brainclpdxtoalltum.png", 
           width = 5000, height = 2300, units = "px")
@@ -518,8 +515,6 @@ master_sub <- data.frame(SRA = master_sub$rse_sampname, tissue = master_sub$tiss
 
 ## generate heatmap
 ```{r}
-library(pheatmap)
-
 anno_col <- data.frame(master_sub$tissue)
 rownames(anno_col) <- master_sub$SRA
 colnames(anno_col) <- "Model Origin Tissue"
@@ -592,9 +587,12 @@ colnames(alltis_annocol) <- "Tissue Type"
 
 # cell line names
 alltis_top100cl_names <- master_sub[match(mix_top100cl, master_sub$SRA),]$common_name
+saveRDS(corbytis_alltis_100cl_df, "../data/top100_cl_corr.rds")
 
 # heatmap!
+png("../plots/top100_cl_heatmap.png", width = 12, height = 5, units = "in", res = 1200)
+set.seed(5)
 ann_colors <- list("Tissue Type" = c('Non-Disease' = "darkblue", Tumor = "orange")) # make tissue type anno color consistent
-pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors, fontface = "bold")
-
+ComplexHeatmap::pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors, fontface = "bold")
+dev.off()
 ```
