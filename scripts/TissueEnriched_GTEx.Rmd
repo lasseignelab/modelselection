@@ -485,7 +485,7 @@ ggsave(filename = "../plots/tags_violin/brainclpdxtoalltum.png",
 range(tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_cor_pdxcl_alltum_vio_in$type == "Cell Line",]$cor)
 range(tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_cor_pdxcl_alltum_vio_in$type == "PDX",]$cor)
 
-ggplot(tis_gene_cor_pdxcl_allcon_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Control Tissue Type", y = "Median Correlation of GBM Models to Tissues in Each Tissue's Specific Genes") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
+ggplot(tis_gene_cor_pdxcl_allcon_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Non-Disease Tissue Type", y = "Median Correlation of GBM Models to Tissues in Each Tissue's Specific Genes") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/tags_violin/brainclpdxtoallcon.png", 
           width = 5000, height = 2300, units = "px")
 ```

@@ -71,8 +71,8 @@ print(c(length(na.omit(cl_tumtis_indgene[cl_tumtis_indgene$p.value < 0.05,]$p.va
 ```
 
 _Genes that pass p-val filtering (<0.05):_
-* CL vs Tum Tissue: 2397
-* CL vs Con Tissue: 2214
+* CL vs Tum Tissue: 1909
+* CL vs Con Tissue: 2151
 * PDX vs Tum Tissue: 2402
 * PDX vs Con Tissue: 1973
 
@@ -85,18 +85,22 @@ pdx_tumtis_indgene_siggenes <- rownames(na.omit(pdx_tumtis_indgene[pdx_tumtis_in
 pdx_ndtis_indgene_siggenes <- rownames(na.omit(pdx_ndtis_indgene[pdx_ndtis_indgene$p.value < 0.05,]))
 
 cl_pdx_indgene_sigvenn <- list(justcl_tum = cl_tumtis_indgene_siggenes[!cl_tumtis_indgene_siggenes %in% pdx_tumtis_indgene_siggenes], just_pdx_tum = pdx_tumtis_indgene_siggenes[!pdx_tumtis_indgene_siggenes %in% cl_tumtis_indgene_siggenes], in_both_tum = intersect(cl_tumtis_indgene_siggenes, pdx_tumtis_indgene_siggenes), justcl_con = cl_ndtis_indgene_siggenes[!cl_ndtis_indgene_siggenes %in% pdx_ndtis_indgene_siggenes], just_pdx_con = pdx_ndtis_indgene_siggenes[!pdx_ndtis_indgene_siggenes %in% cl_ndtis_indgene_siggenes], in_both_con = intersect(cl_ndtis_indgene_siggenes, pdx_ndtis_indgene_siggenes))
+
+for(i in names(cl_pdx_indgene_sigvenn)){
+    print(paste(i, length(cl_pdx_indgene_sigvenn[[i]])))
+}
 ```
 
 _Genes that are exclusively significant to one group or common in both_
 When correlated with tumor tissue:
-  * exclusive to cell lines: 2269
-* exclusive to pdx: 2274
-* in both: 128
+  * exclusive to cell lines: 1821
+* exclusive to pdx: 2314
+* in both: 88
 
 With control tissue:
-  * exclusive to cell lines: 2131
-* exclusive to pdx: 1890
-* in both: 83
+  * exclusive to cell lines: 2064
+* exclusive to pdx: 1886
+* in both: 87
 
 # pathway analysis
 ```{r}
@@ -125,11 +129,11 @@ for(i in names(cl_pdx_indgene_sigvenn)){
   cl_pdx_indgene_sigvenn[[i]][["gostres"]] <- gost(query = strtrim(cl_pdx_indgene_sigvenn[[i]][["ens"]],15), significant = FALSE)
 }  
 
-for(i in names(cl_pdx_indgene_sigvenn)){
-  png(file = paste("../plots/ind_gene/", i, ".png", sep = ""))
-  gostplot(cl_pdx_indgene_sigvenn[[i]][["gostres"]], interactive = FALSE)
-  dev.off()
-}
+#for(i in names(cl_pdx_indgene_sigvenn)){
+#  png(file = paste("../plots/ind_gene/", i, ".png", sep = ""))
+#  gostplot(cl_pdx_indgene_sigvenn[[i]][["gostres"]], interactive = FALSE)
+#  dev.off()
+#}
 
 rm(test, i)
 ```
@@ -311,7 +315,7 @@ saveRDS(indgene_cor_pathway_res, "../data/indgene_cor_pathway_res.rds")
 # # make all the same length
 # max(lengths(pathgenes)) #26296, this is the longest it needs to be
 # for(i in names(pathgenes)){
-#   length(pathgenes[[i]]) <- 26296
+#   length(pathgenes[[i]]) <- 26237
 # }
 # pathgenes <- as.data.frame(pathgenes)
 # 
@@ -373,7 +377,7 @@ publish_gosttable(indgene_cor_pathway_res[["cl_tumtis"]][["sig"]][["neg"]][["gos
 publish_gosttable(indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 
 ## neg
-### 222 total, sub to top 10
+### 25 total, sub to top 10
 temp <- indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]
 temp <- temp[order(temp$p_value),][1:10,]$term_id
 
@@ -384,7 +388,7 @@ publish_gosttable(indgene_cor_pathway_res[["cl_ndtis"]][["sig"]][["neg"]][["gost
 publish_gosttable(indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["gost"]], highlight_terms = indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["gost"]]$result[indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["pos"]][["gost"]]$result$significant == TRUE,]$term_id, use_colors = TRUE, show_columns = c("source", "term_name", "term_size", "intersection_size"), filename = NULL)
 
 ## neg
-### 272 total, sub to top 10
+### 261 total, sub to top 10
 temp <- indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["neg"]][["gost"]]$result[indgene_cor_pathway_res[["pdx_tumtis"]][["sig"]][["neg"]][["gost"]]$result$significant == TRUE,]
 temp <- temp[order(temp$p_value),][1:10,]$term_id
 
@@ -539,7 +543,7 @@ for(i in c("cl_tumtis", "cl_ndtis", "pdx_tumtis", "pdx_ndtis")){
   for(i in c("sig", "insig")){
     
     title <- c("Cell Line vs Tumor Tissue", "Cell Line vs Non-Disease Tissue", "PDX vs Tumor Tissue", "PDX vs Non-Disease Tissue")
-    indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]] <- str_trunc(indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]], 30)
+    indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]] <- stringr::str_trunc(indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]], 30)
     temp <- ggplot(indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("Pathway") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", title[which(c("cl_tumtis", "cl_ndtis", "pdx_tumtis", "pdx_ndtis") == comparison)])) + labs(color = "Correlation", size = "Recall") + theme_bw() + theme(text = element_text(size=20, face = "bold"), axis.text.y = element_text(size = 20), legend.text = element_text(size = 22), legend.title = element_text(size = 25), axis.title = element_text(size = 25), title = element_text(size = 20)) + scale_size(range = c(5,10)) + guides(colour = guide_legend(override.aes = list(size=10)))
     
     ggexport(temp, filename = paste("../plots/ind_gene/dotplot/final/", comparison, "_", i, ".png", sep = ""), width = 1100, height = 700)
