@@ -19,14 +19,8 @@ library(coin)
 library(ggpubr)
 ```
 
-# generate full correlation object
-```{r generate fullcor obj}
-fullcor <- cor(cbind(gtex_tpm, tcga_tpm, bone_n_tpm, bone_t_tpm, hpa_t_tpm), cbind(ccle_tpm, pdx_tpm, hpa_c_tpm, bone_c_tpm), method = "spearman") # note: this does not need to be built if built in Cor_by_GeneSetSize.Rmd
-saveRDS(fullcor, "../data/fullcor.rds") # so it doesn't need to be built again
-```
-
-```{r}
-# to read in instead
+# read in full correlation object
+```{r read in fullcor obj}
 sample_master_meta <- readRDS("../data/sample_master_meta.rds")
 fullcor <- readRDS("../data/fullcor.rds")
 ```
@@ -111,7 +105,7 @@ autoplot(brain_pcares, data = brain_tpm_meta, colour = "origin", x = 2, y = 3)
 ## fix some metadata for cell line type first
 ## NAs in cell_line col mean exclude NAs then subset
 sample_brain_meta[!is.na(sample_brain_meta$cell_line) & sample_brain_meta$cell_line=="u251mg_",]$cell_line <- "u251mg"
-sample_brain_meta[!is.na(sample_brain_meta$cell_line) & sample_brain_meta$cell_line=="shsy5y_",]$cell_line <- "shsy5y"
+#sample_brain_meta[!is.na(sample_brain_meta$cell_line) & sample_brain_meta$cell_line=="shsy5y_",]$cell_line <- "shsy5y" #removed when filtering for GBM-derived CL's
 
 # need to make and re-filt tpm matrix for just cell lines
 gbm_cl_tpm <- brain_tpm_filt[,colnames(brain_tpm_filt) %in% cell_line_gbm_samples]
@@ -131,10 +125,8 @@ autoplot(gbm_cl_pcares, data = gbm_cl_pca_meta, colour = "cl")
 
 # now the fancy PCAs
 ```{r rug plot}
-library(mixOmics)
-library(PLSDAbatch)
-
 all_pca <- pca(t(brain_tpm_filt), ncomp = 3, scale = TRUE)
+saveRDS(all_pca, "../data/pca_brain.rds")
 
 # making origin factor
 brain_meta_sub <- matrix(sample_brain_meta[,2])
@@ -149,9 +141,9 @@ brain_fact_cohort <- factor(brain_meta_sub)
 # making visual
 ## by just origin type
 colorset <- rainbow(4)
-#png("../plots/pca_origintype.png")
+png("../plots/GBM_pca_origintype.png")
 Scatter_Density(object = all_pca, batch = brain_fact_origin, color.set = colorset, batch.legend.title = "Origin Type", legend.cex = 1.5, legend.title.cex = 1.6, title.cex = 1.6)
-#dev.off() # NOTE: for some reason with png() the image quality is always bad, even when I scale up dimensions. Better off generating plot in R script then >  image
+dev.off() # NOTE: for some reason with png() the image quality is always bad, even when I scale up dimensions. Better off generating plot in R script then >  image
 
 # by data source
 colorset <- rainbow(6)
@@ -168,18 +160,18 @@ Scatter_Density(object = all_pca, batch = brain_fact_sex, color.set = colorset, 
 # clean env
 rm(brain_meta_sub, brain_fact_cohort, brain_fact_origin)
 rm(all_pca)# be careful if you still need this, obj takes a while to generate
+gc()
 ```
 
 # next, compare median correlation to GBM tissue, all brain tumor tissue, and brain control tissue
 ```{r}
-library(matrixStats)
 # for cell lines
 ## all
-fullcor_gbm_cl_sub <- data.frame(GBM = colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% gbm_samples,])))
-fullcor_gbm_cl_sub$BT <- colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% bt_samples,]))
-fullcor_gbm_cl_sub$BCon <- colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% bcon_samples,]))
-rownames(fullcor_gbm_cl_sub) <- colnames(fullcor_gbm_cl)
-gbm_cl_cor <- colMedians(as.matrix(fullcor_gbm_cl_sub))
+#fullcor_gbm_cl_sub <- data.frame(GBM = colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% gbm_samples,])))
+#fullcor_gbm_cl_sub$BT <- colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% bt_samples,]))
+#fullcor_gbm_cl_sub$BCon <- colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% bcon_samples,]))
+#rownames(fullcor_gbm_cl_sub) <- colnames(fullcor_gbm_cl)
+#gbm_cl_cor <- colMedians(as.matrix(fullcor_gbm_cl_sub)) ##### SAME CODE AS BELOW VVV #####
 
 ## just GBM
 fullcor_gbm_cl_sub <- data.frame(GBM = colMedians(as.matrix(fullcor_gbm_cl[rownames(fullcor_gbm_cl) %in% gbm_samples,])))
@@ -195,10 +187,12 @@ fullcor_gbm_pdx_sub$BCon <- colMedians(as.matrix(fullcor_gbm_pdx[rownames(fullco
 rownames(fullcor_gbm_pdx_sub) <- colnames(fullcor_gbm_pdx)
 gbm_pdx_cor <- colMedians(as.matrix(fullcor_gbm_pdx_sub))
 
-View(data.frame(GBM_pdx = gbm_pdx_cor, GBM_cl = gbm_cl_cor, BRAIN_cl = gbm_cl_cor, row.names = c("GBM_tis", "BT_tis", "BCon_tis")))
+#View(data.frame(GBM_pdx = gbm_pdx_cor, GBM_cl = gbm_cl_cor, BRAIN_cl = gbm_cl_cor, row.names = c("GBM_tis", "BT_tis", "BCon_tis"))) #### gbm_cl_cor used twice ####
 
-# clear objects
-rm(fullcor_gbm_cl_sub, fullcor_gbm_pdx_sub, gbm_cl_cor, brain_pdx_cor)
+# save then clear objects
+saveRDS(gbm_cl_cor, "../data/gbm_cellline_cor.rds")
+saveRDS(gbm_pdx_cor, "../data/gbm_pdx_cor.rds")
+#rm(fullcor_gbm_cl_sub, fullcor_gbm_pdx_sub, gbm_cl_cor, brain_pdx_cor)
 ```
 
 Correlation metrics:
@@ -211,13 +205,13 @@ Correlation metrics:
 cor_dismatch_res_all <- readRDS("../data/recount3/corres/cor_dismatch_res_all.rds")
 cor_bestmatch <- cor_dismatch_res_all[["alltoptissue"]]
 cor_bestmatch_cl <- cor_bestmatch[cor_bestmatch$sample %in% cell_line_gbm_samples,]
-length(cor_bestmatch_cl[cor_bestmatch_cl$samp_origin == cor_bestmatch_cl$res_top_first,]$sample) # 4
+length(cor_bestmatch_cl[cor_bestmatch_cl$samp_origin == cor_bestmatch_cl$res_top_first,]$sample) 
 View(table(cor_bestmatch_cl[cor_bestmatch_cl$samp_origin != cor_bestmatch_cl$res_top_first,]$res_top_first))
 cor_bestmatch_pdx <- cor_bestmatch[cor_bestmatch$sample %in% pdx_samples,]
-length(cor_bestmatch_pdx[cor_bestmatch_pdx$samp_origin == cor_bestmatch_pdx$res_top_first,]$sample) # 64
+length(cor_bestmatch_pdx[cor_bestmatch_pdx$samp_origin == cor_bestmatch_pdx$res_top_first,]$sample) 
 
 # clear objects
-rm(cor_dismatch_res_all, cor_bestmatch, cor_bestmatch_cl, cor_bestmatch_pdx)
+#rm(cor_dismatch_res_all, cor_bestmatch, cor_bestmatch_cl, cor_bestmatch_pdx)
 ```
 
 1 of 27 cell lines most closely correlated with brain cancer
@@ -248,9 +242,10 @@ pheatmap(fullcor_brain, annotation_col = annotation_col, annotation_row = annota
 
 # now heatmap of median for each subset
 ## making cor matrix subsets
-gbmcor <- fullcor_brain[rownames(fullcor_brain) %in% gbm_samples,]
-btcor <- fullcor_brain[rownames(fullcor_brain) %in% bt_samples,]
-bccor <- fullcor_brain[rownames(fullcor_brain) %in% bcon_samples,]
+fullcor_gbm <- fullcor_brain[, colnames(fullcor_brain) %in% rownames(annotation_col)] #correlations of brain to GBM-derived CL and PDX samples
+gbmcor <- fullcor_gbm[rownames(fullcor_gbm) %in% gbm_samples,]
+btcor <- fullcor_gbm[rownames(fullcor_gbm) %in% bt_samples,]
+bccor <- fullcor_gbm[rownames(fullcor_gbm) %in% bcon_samples,]
 
 ## now take median across cols (tissues)
 gbmcor_tissub <- colMedians(gbmcor)
@@ -260,9 +255,10 @@ bccor_tissub <- colMedians(bccor)
 ## make all one object
 hm_rm <- data.frame(GBM_Tissue = gbmcor_tissub, Brain_Tum_Tissue = btcor_tissub, Brain_Control_Tissue = bccor_tissub)
 rownames(hm_rm) <- colnames(gbmcor)
+saveRDS(cbind(annotation_col, hm_rm), "../data/gbm_modelsandtissues_cor.rds")
 
 # annotation colors
-ann_colors <- list(Model = c('Cell Line' = "#ff9288", PDX = "#01dae0"))
+ann_colors <- list(Model = c('Cell Line' = "#ff9288", 'PDX' = "#01dae0"))
 
 ## hm time
 png("../plots/JUSTGBM_hm_brainsubs.png", width = 900, height = 1100)
@@ -469,5 +465,6 @@ for(i in unique(cor_dismatch_contis_long$tissue)){
     rstatix::wilcox_test(cor ~ Model) %>% add_significance()
 }
 
+saveRDS(cor_dismatch_stattest_alltis, "../data/cor_wilcox_matches_alltissues.rds")
 # basically, they're all significant
 ```
