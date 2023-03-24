@@ -12,11 +12,10 @@ source("../scripts/functions/tissuecormatch.R") # change to where you have this 
 source("../scripts/functions/tissuecormatch_median.R")
 #add to docker
 library(ggplot2)
-library(ComplexHeatmap) #no package called ‘ComplexHeatmap’ 
+library(ComplexHeatmap) 
 library(matrixStats)
 ```
 
-# I copied full (63856 genes) rses and tpm from my recount3 download folder into a data/rse_subsets/63856/ folder to be in the same root location as the subsets, in ../63856/tpm and ../63856/rse folders
 ```{r}
 sample_master_meta <- readRDS("../data/sample_master_meta.rds")
 ```
@@ -157,7 +156,21 @@ saveRDS(subset_medians, "../data/rse_subsets/subset_medians.rds")
 saveRDS(subsets, "../data/rse_subsets/subsets.rds")
 gc()
 ```
-read in
+read in TPM objects
+```{r}
+gtex_tpm <- readRDS("~/code_review/modelselection/data/recount3/tpm/gtex_tpm.rds")
+tcga_tpm <- readRDS("~/code_review/modelselection/data/recount3/tpm/tcga_tpm.rds")
+bone_n_tpm <- readRDS("~/code_review/modelselection/data/recount3/tpm/bone_n_tpm.rds")
+bone_t_tpm <- readRDS("~/code_review/modelselection/data/recount3/tpm/bone_t_tpm.rds")
+hpa_t_tpm <- readRDS("~/code_review/modelselection/data/recount3/tpm/hpa_t_tpm.rds")
+
+ccle_tpm <- readRDS("~/code_review/modelselection/data/recount3/tpm/ccle_tpm.rds")
+pdx_tpm <- readRDS("~/code_review/modelselection/data/recount3/tpm/pdx_tpm.rds")
+hpa_c_tpm <- readRDS("~/code_review/modelselection/data/recount3/tpm/hpa_c_tpm.rds")
+bone_c_tpm <- readRDS("~/code_review/modelselection/data/recount3/tpm/bone_c_tpm.rds")
+
+```
+
 
 ```{r}
 fullcor <- cor(cbind(gtex_tpm, tcga_tpm, bone_n_tpm, bone_t_tpm, hpa_t_tpm), cbind(ccle_tpm, pdx_tpm, hpa_c_tpm, bone_c_tpm), method = "spearman") # this object takes a while, only build if not already in env/exported
