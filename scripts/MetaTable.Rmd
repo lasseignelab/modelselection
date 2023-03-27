@@ -5,6 +5,7 @@ ORDER: TCGA, GTEx, HPA Tissues, CCLE, HPA Cell Lines, PDX, BONE Tumor, BONE "Non
 # load packages
 ```{r load packages}
 library(stringr)
+library(stringi)
 library(tidyverse)
 source("../scripts/functions/barebones_cellline.R") # change to where you have this function script saved
 library(foreach)
@@ -32,254 +33,102 @@ stopCluster(cl)
 hpa_tissues <- c("Skin", "Skin", "Brain", "Brain", "Bone", "Lung", "Lung", "Colon", "Colon", "Kidney", "Kidney", "Cervix", "Cervix", "Liver", "Liver", "Breast", "Breast", "Prostate", "Prostate", "Bladder", "Bladder", "Brain", "Brain")
 ```
 
-# need to fix demographics for gtex
+# need to fix demographics for gtex, tissue source for HPA tissues
 ```{r gtex sex}
 gtex_meta$gtex.sex[grep(1, gtex_meta$gtex.sex)] <- "Male"
 gtex_meta$gtex.sex[grep(2, gtex_meta$gtex.sex)] <- "Female"
 ```
 
-sample names used for each group:
-*TCGA - rownames(tcga_meta) 
-*GTEx - rownames(gtex_meta)
-*HPA tissues - paste("HPA_T_", hpa_t_rse$external_id, sep = "")
-*CCLE - paste("CCLE_", ccle_rse$sra_attribute.cell_line, sep = "")
-*HPA cell lines - paste("HPA_C_", hpa_c_rse$sra.sample_name, sep = "")
-*PDX - paste("PDX_", pdx_rse@colData@rownames, sep = "")
-*BONE - paste("BONE_", bone_t_rse@colData@rownames, sep = ""), paste("BONE_", bone_n_rse@colData@rownames, sep = ""), paste("BONE_", bone_c_rse@colData@rownames, sep = "")
-
-* counts matrices need to be renamed to be consistent
-
+# build metadata data frame
 ```{r sample master metadata, eval=FALSE, include=FALSE}
-# note: for TCGA, barcode is used instead of natural sample name
-# note: make sure expand_sra_attributes() has been used on CCLE and PDX
 startTime <- Sys.time()
-sample_master_meta <- data.frame(
- source = c(
-   rep("TCGA", length(rownames(tcga_meta))), rep("GTEx", length(rownames(gtex_meta))), 
-   rep("HPA T", length(rownames(hpa_t_rse))), rep("CCLE", length(rownames(ccle_rse))), rep("HPA CL", length(rownames(hpa_c_rse))), rep("PDX", length(rownames(pdx_rse))), rep("BONE", length(c(rownames(bone_t_rse), rownames(bone_n_rse), rownames(bone_c_rse))))),
-  origin = c(
-    rep("Tumor Tissue", length(rownames(tcga_meta))), rep("Non-Diseased Tissue", length(rownames(gtex_meta))), 
-    rep("Non-Diseased Tissue", length(rownames(hpa_t_rse))), rep("Cell Line", length(c(rownames(ccle_rse), rownames(hpa_c_rse)))), rep("PDX", length(rownames(pdx_rse))), rep("Tumor Tissue", length(rownames(bone_t_rse))), rep("Non-Diseased Tissue", length(rownames(bone_n_rse))), rep("Cell Line", length(rownames(bone_c_rse)))),
-  rse_samp_name = c(
-    rownames(tcga_meta), rownames(gtex_meta), rownames(hpa_t_rse), rownames(ccle_rse), rownames(hpa_c_rse), rownames(pdx_rse), rownames(bone_t_rse), rownames(bone_n_rse), rownames(bone_c_rse)),
-  tissue = c(
-    str_to_title(tcga_meta$tcga.gdc_cases.project.primary_site), str_to_title(gsub("_", " ", gtex_meta$study)), 
-    str_to_title(hpa_t_rse$recount_pred.curated.tissue), str_to_title(gsub("_", " ", ccle_rse$sra_attribute.tissue)), hpa_tissues, rep("Brain", length(rownames(pdx_rse))), rep("Bone", length(c(rownames(bone_t_rse), rownames(bone_n_rse), rownames(bone_c_rse))))),
-  tissue_coerced = c(
-    str_to_title(tcga_meta$tcga.gdc_cases.project.primary_site), str_to_title(gsub("_", " ", gtex_meta$study)), 
-    str_to_title(hpa_t_rse$recount_pred.curated.tissue), str_to_title(gsub("_", " ", ccle_rse$sra_attribute.tissue)), hpa_tissues, rep("Brain", length(rownames(pdx_rse))), rep("Bone", length(c(rownames(bone_t_rse), rownames(bone_n_rse), rownames(bone_c_rse))))), # edited in next code chunk
-  cell_line = c(rep(NA, length(c(
-    rownames(tcga_meta),rownames(gtex_meta),
-    rownames(hpa_t_rse)))), barebones_cellline(c(ccle_rse$sra_attribute.cell_line, str_sub(hpa_c_rse$sra.sample_name, end = -2))), rep(NA, length(rownames(pdx_rse))), rep(NA, length(c(rownames(bone_t_rse), rownames(bone_n_rse)))), barebones_cellline(bone_c_rse$sra_attribute.source_name)), 
-  disease = c(str_to_title(
-    tcga_meta$tcga.gdc_cases.project.name), paste("Non-Diseased", str_to_title(gsub("_", " ", gtex_meta$study))), 
-    paste("Non-Diseased", str_to_title(gsub("_", " ", 
-    hpa_t_rse$recount_pred.curated.tissue))), str_to_title(gsub("_", " ",ccle_rse$sra_attribute.disease)), str_to_title(str_sub(hpa_c_rse$sra.sample_description, end = -10)), rep("Glioblastoma", length(rownames(pdx_rse))), rep("Osteosarcoma", length(rownames(bone_t_rse))), rep("Non-Diseased Bone", length(rownames(bone_n_rse))), rep("Osteosarcoma", length(rownames(bone_c_rse)))),
-  sequencer = c(
-    tcga_meta$tcga.gdc_platform, 
-    rep("Illumina HiSeq", length(c(
-      rownames(gtex_meta), 
-      rownames(hpa_t_rse), rownames(ccle_rse), rownames(hpa_c_rse), rownames(pdx_rse), rownames(bone_t_rse), rownames(bone_n_rse), rownames(bone_c_rse))))),
-  sex = c(
-    str_to_title(tcga_meta$tcga.gdc_cases.demographic.gender), gtex_meta$gtex.sex, 
-    rep("Not Reported", length(rownames(hpa_t_rse))), str_to_title(ccle_rse$sra_attribute.sex), rep("Not Reported", length(rownames(hpa_c_rse))), str_to_title(pdx_rse$sra_attribute.sex), rep("Not Reported", length(c(rownames(bone_t_rse), rownames(bone_n_rse), rownames(bone_c_rse))))),
-  race = c(str_to_title(
-    tcga_meta$tcga.gdc_cases.demographic.race), 
-    rep("Not Reported", length(c(rownames(gtex_meta),
-    rownames(hpa_t_rse)))), ccle_rse$sra_attribute.ethnicity, rep("Not Reported", length(c(rownames(hpa_c_rse), rownames(pdx_rse), rownames(bone_t_rse), rownames(bone_n_rse), rownames(bone_c_rse))))),
-  readlength = c(tcga_meta$recount_qc.star.average_input_read_length, gtex_meta$recount_qc.star.average_input_read_length,
-    hpa_t_rse$recount_qc.star.average_input_read_length, ccle_rse$recount_qc.star.average_input_read_length, hpa_c_rse$recount_qc.star.average_input_read_length, pdx_rse$recount_qc.star.average_input_read_length, bone_t_rse$recount_qc.star.average_input_read_length, bone_n_rse$recount_qc.star.average_input_read_length, bone_c_rse$recount_qc.star.average_input_read_length))
+
+tcga_meta_adj <- tcga_meta %>% 
+  mutate(., source = "TCGA", origin = "Tumor Tissue", rse_samp_name = rownames(tcga_meta), tissue = `tcga.gdc_cases.project.primary_site`, cell_line = NA, 
+         disease = `tcga.gdc_cases.project.name`, sequencer = `tcga.gdc_platform`, sex = str_to_title(`tcga.gdc_cases.demographic.gender`), 
+         race = str_to_title(`tcga.gdc_cases.demographic.race`), readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+  dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+
+ gtex_meta_adj <- gtex_meta %>% 
+   mutate(., source = "GTEx", origin = "NonDisease Tissue", rse_samp_name = rownames(gtex_meta), tissue = `gtex.smts`, cell_line = NA, disease = paste("NonDisease", `gtex.smts`), 
+          sequencer = "Illumina HiSeq", sex = ifelse(gtex.sex == 1, "Male", ifelse(gtex.sex == 2, "Female", "Not Reported")), race = "Not Reported", 
+          readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+
+
+bone_n_rse_adj <- bone_n_rse %>% 
+  mutate(., source = "BONE", origin = "NonDisease Tissue", rse_samp_name = rownames(bone_n_rse), tissue = "Bone", cell_line = NA, disease = "NonDisease Bone", 
+         sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+  dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+
+bone_c_rse_adj <- bone_c_rse %>% 
+  mutate(., source = "BONE", origin = "Cell Line", rse_samp_name = rownames(bone_c_rse), tissue = "Bone", cell_line = barebones_cellline(`sra_attribute.source_name`), 
+         disease = "Osteosarcoma", sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, 
+         .keep = "used") %>%
+  dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+
+bone_t_rse_adj <- bone_t_rse %>% 
+  mutate(., source = "BONE", origin = "Tumor Tissue", rse_samp_name = rownames(bone_t_rse), tissue = "Bone", cell_line = NA, disease = "Osteosarcoma", 
+         sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+  dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+
+
+hpa_c_rse_adj <- hpa_c_rse %>% 
+  mutate(., source = "HPA CL", origin = "Cell Line", rse_samp_name = rownames(hpa_c_rse), tissue = hpa_tissues, cell_line = str_sub(`sra.sample_name`, end = -2), 
+         disease = str_to_title(str_sub(`sra.sample_description`, end = -10)), sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", 
+         readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+  dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+
+hpa_t_rse_adj <- hpa_t_rse %>% 
+  mutate(., source = "HPA T", origin = "NonDisease Tissue", rse_samp_name = rownames(hpa_t_rse), tissue = str_to_title(`sra_attribute.organism_part`), cell_line = NA, 
+         disease = paste("NonDisease", str_to_title(`sra_attribute.organism_part`)), sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", 
+         readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>%
+  dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+hpa_t_rse_adj[hpa_t_rse_adj$tissue == "Homo Sapiens",]$tissue <- str_to_title(hpa_t_rse[hpa_t_rse$sra_attribute.organism_part == "Homo sapiens",]$sra_attribute.INSDC_status) # a few cells' columns of this RSE are shifted to the left for some reason
+
+ccle_rse_adj <- ccle_rse %>% 
+  mutate(., source ="CCLE", origin = "Cell Line", rse_samp_name = rownames(ccle_rse), tissue = str_to_title(gsub("_", " ", `sra_attribute.tissue`)), 
+         cell_line = barebones_cellline(sra_attribute.cell_line), disease = str_to_title(gsub("_", " ", `sra_attribute.disease`)), sequencer = "Illumina HiSeq", 
+         sex = str_to_title(sra_attribute.sex), race = `sra_attribute.ethnicity`, readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+  dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+
+pdx_rse_adj <- pdx_rse %>% 
+  mutate(., source = "PDX", origin = "PDX", rse_samp_name = rownames(pdx_rse), tissue = "Brain", cell_line = NA, disease = "Glioblastoma", sequencer = "Illumina HiSeq", 
+         sex = str_to_title(sra_attribute.sex), race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+  dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+
+sample_master_meta <- rbind(tcga_meta_adj, gtex_meta_adj, bone_c_rse_adj, bone_n_rse_adj, bone_t_rse_adj, hpa_c_rse_adj, hpa_t_rse_adj, ccle_rse_adj, pdx_rse_adj)
+saveRDS(sample_master_meta, "../data/combined_projects_metadata.rds")
+
+# adjust some wording in the tissue_coerced and disease_coerced columns
+sample_master_meta$tissue_coerced <- stri_replace_all_regex(sample_master_meta$tissue,
+                                             pattern = c("Haematopoietic And Lymphoid Tissue|Lymph Nodes|Bone Marrow|Lymph Node", "Bile Duct|Biliary Tract", "Autonomic Ganglia", 
+                                                         "Upper Aerodigestive Tract", "Central Nervous System|Cerebral Cortex", "Large Intestine|Colon Adenocarcinoma", 
+                                                         "Urinary Tract", "Endometrium", "Oesophagus", "Cervix Uteri", "Rectum Adenocarcinoma", "Gall Bladder", "Duodenum", 
+                                                         "Animal Ovary"),
+                                             replacement = c("Blood", "Biliary System", "Nerve", "Head and Neck", "Brain", "Colon", "Bladder", "Uterus", "Esophagus", "Cervix", 
+                                                             "Rectum", "Gallbladder", "Small Intestine", "Ovary"),
+                                             vectorize = FALSE)
+
+sample_master_meta <- sample_master_meta %>% mutate(tissue_coerced = ifelse(tissue %in% "Colorectal", ifelse(disease %in% "Colon Adenocarcinoma", "Colon", ifelse(disease %in% "Rectum Adenocarcinoma", "Rectum", tissue_coerced)), tissue_coerced))
+
+## now add a column that coerces diseases into broader groups
+sample_master_meta <- sample_master_meta %>% mutate(disease_coerced = ifelse(origin %in% c("Cell Line", "PDX", "Tumor Tissue"), paste(tissue_coerced, "Cancer"), paste("NonDisease", tissue_coerced)))
+
+#grammar corrections 
+sample_master_meta <- sample_master_meta %>% mutate(disease_coerced = ifelse(disease_coerced %in% "Uterus Cancer", "Uterine Cancer",
+                                                                             ifelse(disease_coerced %in% "Ovary Cancer", "Ovarian Cancer",
+                                                                                    ifelse(disease_coerced %in% "Esophagus Cancer", "Esophageal Cancer",
+                                                                                           ifelse(disease_coerced %in% "Adrenal Gland Cancer", "Adrenal Cancer",
+                                                                                                  ifelse(disease_coerced %in% "Pancreas Cancer", "Pancreatic Cancer",
+                                                                                                         ifelse(disease_coerced %in% "Rectum Cancer", "Rectal Cancer",
+ifelse(disease_coerced %in% "Testis Cancer", "Testicular Cancer",
+       ifelse(disease_coerced %in% "Pleura Cancer", "Pleural Cancer",
+              ifelse(disease_coerced %in% "Cervix Cancer", "Cervical Cancer",
+                     ifelse(disease_coerced %in% "Biliary System Cancer", "Biliary Cancer", disease_coerced)))))))))))
 
 endTime <- Sys.time()
 print(endTime - startTime) 
-```
-ORDER: TCGA, GTEx, HPA Tissues, CCLE, HPA Cell Lines, PDX, BONE Tumor, BONE Non-Diseased, BONE Cell Lines
-
-
-```{r}
-averys_meta <- readRDS("../data/sample_master_meta.rds")
-#
-#tcga_meta <- tcga_meta %>% 
-#  mutate(., source = "TCGA", origin = "Tumor", sample_name = `tcga.tcga_barcode`, tissue = `tcga.gdc_cases.project.primary_site`, cell_line = NA, disease = #`tcga.gdc_cases.project.name`, sequencer = `tcga.gdc_platform`, sex = str_to_title(`tcga.gdc_cases.demographic.gender`), race = #str_to_title(`tcga.gdc_cases.demographic.race`), readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
-#  dplyr::select(source, origin, sample_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
-#
-# gtex_meta <- gtex_meta %>% 
-#   mutate(., source = "GTEx", origin = "NonDisease", sample_name = row.names(gtex_meta), tissue = `gtex.smts`, cell_line = NA, disease = paste("NonDisease ", `gtex.smts`), #sequencer = "Illumina HiSeq", 
-#                    sex = ifelse(gtex.sex == 1, "Male", 
-#                                 ifelse(gtex.sex == 2, "Female", "Not Reported")), race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = #"used") %>% 
-#   dplyr::select(source, origin, sample_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
-#
-#
-#bone_n_rse <- bone_n_rse %>% 
-#  mutate(., source = "BONE", origin = "NonDisease", sample_name = paste("BONE_", row.names(bone_n_rse)), tissue = "Bone", cell_line = NA, disease = "NonDisease Bone", #sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
-#  dplyr::select(source, origin, sample_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
-#
-#bone_c_rse <- bone_c_rse %>% 
-#  mutate(., source = "BONE", origin = "Cell Line", sample_name = paste("BONE_", row.names(bone_c_rse)), tissue = "Bone", cell_line = #barebones_cellline(`sra_attribute.source_name`), disease = "Osteosarcoma", sequencer = "Illumina HiSeq",
-#sex = "Not Reported", race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>%
-#  dplyr::select(source, origin, sample_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
-#
-#bone_t_rse <- bone_t_rse %>% 
-#  mutate(., source = "BONE", origin = "Tumor", sample_name = paste("BONE_", row.names(bone_t_rse)), tissue = "Bone", cell_line = NA, disease = "Osteosarcoma", sequencer = #"Illumina HiSeq", sex = "Not Reported", race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
-#  dplyr::select(source, origin, sample_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
-#
-#
-#hpa_c_rse <- hpa_c_rse %>% 
-#  mutate(., source = "HPA CL", origin = "Cell Line", sample_name = paste("HPA_C_", sra.sample_name), tissue = hpa_tissues, cell_line = str_sub(`sra.sample_name`, end = -2), #disease = str_to_title(str_sub(`sra.sample_description`, end = -10)), sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", readlength = #`recount_qc.star.average_input_read_length`, .keep = "used") %>% 
-#  dplyr::select(source, origin, sample_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
-#
-#hpa_t_rse <- hpa_t_rse %>% 
-#  mutate(., source = "HPA T", origin = "NonDisease", sample_name =  paste("HPA_T_", external_id), tissue = `recount_pred.curated.tissue`, cell_line = NA, disease = #paste("NonDisease ", `recount_pred.curated.tissue`), sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", readlength = #`recount_qc.star.average_input_read_length`, .keep = "used") %>%
-#  dplyr::select(source, origin, sample_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
-#
-#ccle_rse <- ccle_rse %>% 
-#  mutate(., source ="CCLE", origin = "Cell Line", sample_name = paste("CCLE_", sra_attribute.cell_line), tissue = str_to_title(gsub("_", " ", `sra_attribute.tissue`)), #cell_line = barebones_cellline(sra_attribute.cell_line), disease = str_to_title(gsub("_", " ", `sra_attribute.disease`)), sequencer = "Illumina HiSeq", sex = #str_to_title(sra_attribute.sex), race = `sra_attribute.ethnicity`, readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
-#  dplyr::select(source, origin, sample_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
-#
-#pdx_rse <- pdx_rse %>% 
-#  mutate(., source = "PDX", origin = "PDX", sample_name = paste("PDX_", row.names(pdx_rse)), tissue = "Brain", cell_line = NA, disease = "Glioblastoma", sequencer = #"Illumina HiSeq", sex = str_to_title(sra_attribute.sex), race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% #dplyr::select(source, origin, sample_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
-#
-#
-#sample_master_meta <- rbind(tcga_meta, gtex_meta, bone_c_rse, bone_n_rse, bone_t_rse, hpa_c_rse, hpa_t_rse, ccle_rse, pdx_rse)
-saveRDS(sample_master_meta, "../data/combined_projects_metadata.rds")
-
-sample_master_meta <- sample_master_meta %>% mutate(tissue_coerced = ifelse(tissue %in% c("Haematopoietic And Lymphoid Tissue", "Lymph Nodes", "Bone Marrow"), "Blood",
-                                   ifelse(tissue %in% c("Bile Duct", "Biliary Tract"), "Biliary System", 
-                                          ifelse(tissue %in% c("Autonomic Ganglia"), "Nerve",
-                                                 ifelse(tissue %in% c("Upper Aerodigestive Tract"), "Head And Neck",
-                                                        ifelse(tissue %in% c("Central Nervous System", "Cerebral Cortex"), "Brain",
-                                                                      ifelse(tissue %in% c("Large Intestine", "Colon Adenocarcinoma"),
-                                                                             "Colon",
-                                                                             ifelse(tissue %in% c("Urinary Tract"), "Bladder",
-                                                                                    ifelse(tissue %in% c("Endometrium"), "Uterus",
-ifelse(tissue %in% c("Oesophagus"), "Esophagus",
-       ifelse(tissue %in% c("Cervix Uteri"), "Cervix",
-              ifelse(disease %in% c("Rectum Adenocarcinoma"), "Rectum",
-                     ifelse(tissue %in% c("Gall Bladder"), "Gallbladder",
-                            ifelse(tissue %in% c("Duodenum"), "Small Intestine", tissue))))))))))))))
-
-
-
-#NOT SEEING THESE
-# now need to fix HPA tissue samples with no disease data
-#sample_master_meta[grep("HPA_T_ERR315373", sample_master_meta$sample_name),]$tissue <- "Lymph Nodes"
-#sample_master_meta[grep("HPA_T_ERR315373", sample_master_meta$sample_name),]$tissue_coerced <- "Blood"
-#sample_master_meta[grep("HPA_T_ERR315480", sample_master_meta$sample_name),]$tissue_coerced <- "Gallbladder"
-
-#NOT SEEING THESE, ONLY "" IN CCLE
-# need to replace CCLE disease NA with tissue cancer - AFTER tissue is corrected
-#i1 <- grep("Na", sample_master_meta$disease) # verified that there's no other instance of "Na" for any other samples, match case is TRUE
-#sample_master_meta[i1,]$disease <- paste(sample_master_meta$tissue_coerced[i1], "Cancer") 
-#rm(i1)
-
-# now add a column that coerces diseases into broader groups
-sample_master_meta <- sample_master_meta %>% mutate(disease_coerced = ifelse(origin %in% c("Cell Line", "PDX", "Tumor"), paste(tissue, "Cancer"), disease))
-
-#grammar corrections                                                                             
-# just adjust a few for grammar
-sample_master_meta[grep("Uterus Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Uterine Cancer"
-sample_master_meta[grep("Ovary Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Ovarian Cancer"
-sample_master_meta[grep("Esophagus Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Esophageal Cancer"
-sample_master_meta[grep("Adrenal Gland Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Adrenal Cancer"
-sample_master_meta[grep("Pancreas Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Pancreatic Cancer"
-#sample_master_meta[grep("Rectum Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Rectal Cancer" ##LW come back to!
-sample_master_meta[grep("Testis Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Testicular Cancer"
-sample_master_meta[grep("Pleura Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Pleural Cancer"
-sample_master_meta[grep("Cervix Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Cervical Cancer"
-#sample_master_meta[grep("Biliary System Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Biliary Cancer" ##LW come back to!
-
-
-# now need to fix HPA tissue samples with no disease data
-#sample_master_meta[grep("HPA_T_ERR315373", sample_master_meta$sample_name),]$tissue <- "Lymph Nodes"
-#sample_master_meta[grep("HPA_T_ERR315373", sample_master_meta$sample_name),]$tissue_coerced <- "Blood"
-#sample_master_meta[grep("HPA_T_ERR315480", sample_master_meta$sample_name),]$tissue_coerced <- "Gallbladder"
-#sample_master_meta[grep("Gall Bladder", sample_master_meta$tissue),]$tissue_coerced <- "Gallbladder"
-#sample_master_meta[grep("Cerebral Cortex", sample_master_meta$tissue),]$tissue_coerced <- "Brain"
-sample_master_meta[grep("Duodenum", sample_master_meta$tissue),]$tissue_coerced <- "Small Intestine"
-
-```
-
-
-# need to provide cell lines with matched tissue/tumor, make sure tissues and tumors line up
-## start by adjusting tissues to match across
-```{r master matrix corrections, eval=FALSE, include=FALSE}
-sample_master_meta[grep("Haematopoietic And Lymphoid Tissue", sample_master_meta$tissue),]$tissue_coerced <- "Blood"
-sample_master_meta[grep("Lymph Nodes", sample_master_meta$tissue),]$tissue_coerced <- "Blood"
-sample_master_meta[grep("Bile Duct", sample_master_meta$tissue),]$tissue_coerced <- "Biliary System"
-sample_master_meta[grep("Biliary Tract", sample_master_meta$tissue),]$tissue_coerced <- "Biliary System"
-sample_master_meta[grep("Bone Marrow", sample_master_meta$tissue),]$tissue_coerced <- "Blood"
-sample_master_meta[grep("Autonomic Ganglia", sample_master_meta$tissue),]$tissue_coerced <- "Nerve"
-sample_master_meta[grep("Upper Aerodigestive Tract", sample_master_meta$tissue),]$tissue_coerced <- "Head And Neck"
-sample_master_meta[grep("Central Nervous System", sample_master_meta$tissue),]$tissue_coerced <- "Brain"
-sample_master_meta[grep("Large Intestine", sample_master_meta$tissue),]$tissue_coerced <- "Colon"
-#sample_master_meta[grep("Colorectal", sample_master_meta$tissue),]$tissue_coerced <- "Colon"
-sample_master_meta[grep("Urinary Tract", sample_master_meta$tissue),]$tissue_coerced <- "Bladder"
-sample_master_meta[grep("Endometrium", sample_master_meta$tissue),]$tissue_coerced <- "Uterus"
-sample_master_meta[grep("Oesophagus", sample_master_meta$tissue),]$tissue_coerced <- "Esophagus"
-sample_master_meta[grep("Cervix Uteri", sample_master_meta$tissue),]$tissue_coerced <- "Cervix"
-
-# need to split TCGA colorectal into "colon" and "rectal"
-sample_master_meta[grep("Colon Adenocarcinoma", sample_master_meta$disease),]$tissue_coerced <- "Colon"
-sample_master_meta[grep("Rectum Adenocarcinoma", sample_master_meta$disease),]$tissue_coerced <- "Rectum"
-
-# need to replace CCLE disease NA with tissue cancer - AFTER tissue is corrected
-i1 <- grep("Na", sample_master_meta$disease) # verified that there's no other instance of "Na" for any other samples, match case is TRUE
-sample_master_meta[i1,]$disease <- paste(sample_master_meta$tissue_coerced[i1], "Cancer") 
-rm(i1)
-
-# now need to fix HPA tissue samples with no disease data
-sample_master_meta[grep("HPA_T_ERR315373", sample_master_meta$sample_name),]$tissue <- "Lymph Nodes"
-sample_master_meta[grep("HPA_T_ERR315373", sample_master_meta$sample_name),]$tissue_coerced <- "Blood"
-sample_master_meta[grep("HPA_T_ERR315480", sample_master_meta$sample_name),]$tissue_coerced <- "Gallbladder"
-sample_master_meta[grep("Gall Bladder", sample_master_meta$tissue),]$tissue_coerced <- "Gallbladder"
-sample_master_meta[grep("Cerebral Cortex", sample_master_meta$tissue),]$tissue_coerced <- "Brain"
-sample_master_meta[grep("Duodenum", sample_master_meta$tissue),]$tissue_coerced <- "Small Intestine"
-
-# to check:
-# View(table(sample_master_meta$tissue))
-```
-
-# now add a column that coerces diseases into broader groups
-```{r coerce disease groups, eval=FALSE, include=FALSE}
-sample_master_meta$disease_coerced <- NA
-for (i in unique(sample_master_meta$tissue_coerced)){
-  meta_sub <- sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]
-  tissue <- paste(i)
-  for (i in unique(meta_sub$origin)){
-    if (i == "Non-Diseased Tissue"){
-      meta_sub[grep(paste(i), meta_sub$origin),]$disease_coerced <- paste("Non-Diseased", tissue) 
-    } else{
-      if (length(rownames(meta_sub[grep(paste(i), meta_sub$origin),])) > 0){
-       meta_sub[grep(paste(i), meta_sub$origin),]$disease_coerced <- paste(tissue, "Cancer") 
-      }
-    }
-  }
-  sample_master_meta[sample_master_meta$sample_name %in% meta_sub$sample_name,]$disease_coerced <- meta_sub$disease_coerced
-}  
-
-# just adjust a few for grammar
-sample_master_meta[grep("Uterus Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Uterine Cancer"
-sample_master_meta[grep("Ovary Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Ovarian Cancer"
-sample_master_meta[grep("Esophagus Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Esophageal Cancer"
-sample_master_meta[grep("Adrenal Gland Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Adrenal Cancer"
-sample_master_meta[grep("Pancreas Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Pancreatic Cancer"
-sample_master_meta[grep("Rectum Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Rectal Cancer"
-sample_master_meta[grep("Testis Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Testicular Cancer"
-sample_master_meta[grep("Pleura Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Pleural Cancer"
-sample_master_meta[grep("Cervix Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Cervical Cancer"
-sample_master_meta[grep("Biliary System Cancer", sample_master_meta$disease_coerced),]$disease_coerced <- "Biliary Cancer"
-```
-
-```{r fix wording differences in demographics}
-# sex
-sample_master_meta[grep("Na", sample_master_meta$sex),]$sex <- "Not Reported"
-sample_master_meta[is.na(sample_master_meta$sex),]$sex <- "Not Reported"
-
-# race
-sample_master_meta[grep("White", sample_master_meta$race),]$race <- "Caucasian"
-sample_master_meta[grep("African_american", sample_master_meta$race),]$race <- "Black Or African American"
-sample_master_meta[grep("NA", sample_master_meta$race),]$race <- "Not Reported"
-sample_master_meta[is.na(sample_master_meta$race),]$race <- "Not Reported"
 ```
 
 # identify how many of each cohort belong to a given disease or tissue group
@@ -291,69 +140,66 @@ sample_master_meta[is.na(sample_master_meta$race),]$race <- "Not Reported"
 #View(data.frame(table(sample_master_meta$origin, sample_master_meta$tissue_coerced, sample_master_meta$disease_coerced))[data.frame(table(sample_master_meta$origin, sample_master_meta$tissue_coerced, sample_master_meta$disease_coerced))$Freq != 0,])
 ```
 
-# add broader tissue groups 
+# add broader tissue groups <- I don't think we actually ended up using these?
 ```{r broad tissue groups}
-digestive <- c("Biliary System", "Appendix", "Colon", "Esophagus", "Gallbladder", "Pancreas", "Rectum", "Salivary Gland", "Small Intestine", "Stomach", "Liver")
-urinary <- c("Bladder", "Kidney")
-cardiovascular <- c("Blood", "Blood Vessel", "Heart")
-reproductive <- c("Fallopian Tube", "Cervix", "Ovary", "Uterus", "Vagina", "Testis", "Prostate", "Breast", "Placenta")
-endocrine <- c("Adrenal Gland", "Pituitary", "Thyroid")
-lymphatic <- c("Thymus", "Spleen")
-nervous <- c("Brain", "Nerve", "Eye")
-respiratory <- c("Lung", "Pleura")
-integumentary <- c("Skin", "Head And Neck")
-musculoskeletal <- c("Muscle", "Bone", "Soft Tissue", "Adipose Tissue")
+# digestive <- c("Biliary System", "Appendix", "Colon", "Esophagus", "Gallbladder", "Pancreas", "Rectum", "Salivary Gland", "Small Intestine", "Stomach", "Liver")
+# urinary <- c("Bladder", "Kidney")
+# cardiovascular <- c("Blood", "Blood Vessel", "Heart")
+# reproductive <- c("Fallopian Tube", "Cervix", "Ovary", "Uterus", "Vagina", "Testis", "Prostate", "Breast", "Placenta")
+# endocrine <- c("Adrenal Gland", "Pituitary", "Thyroid")
+# lymphatic <- c("Thymus", "Spleen")
+# nervous <- c("Brain", "Nerve", "Eye")
+# respiratory <- c("Lung", "Pleura")
+# integumentary <- c("Skin", "Head And Neck")
+# musculoskeletal <- c("Muscle", "Bone", "Soft Tissue", "Adipose Tissue")
+# 
+# sample_master_meta$tissue_groups <- NA
+# for(i in unique(sample_master_meta$tissue_coerced)){
+#   if(i %in% digestive){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Digestive"
+#   } else if(i %in% urinary){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Urinary"
+#   }else if(i %in% cardiovascular){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Cardiovascular"
+#   }else if(i %in% reproductive){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Reproductive"
+#   }else if(i %in% endocrine){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Endocrine"
+#   }else if(i %in% lymphatic){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Lymphatic"
+#   }else if(i %in% nervous){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Nervous"
+#   }else if(i %in% respiratory){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Respiratory"
+#   }else if(i %in% integumentary){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Integumentary"
+#   }else if(i %in% musculoskeletal){
+#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Musculoskeletal"
+#   }
+# }
 
-sample_master_meta$tissue_groups <- NA
-for(i in unique(sample_master_meta$tissue_coerced)){
-  if(i %in% digestive){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Digestive"
-  } else if(i %in% urinary){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Urinary"
-  }else if(i %in% cardiovascular){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Cardiovascular"
-  }else if(i %in% reproductive){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Reproductive"
-  }else if(i %in% endocrine){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Endocrine"
-  }else if(i %in% lymphatic){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Lymphatic"
-  }else if(i %in% nervous){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Nervous"
-  }else if(i %in% respiratory){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Respiratory"
-  }else if(i %in% integumentary){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Integumentary"
-  }else if(i %in% musculoskeletal){
-    sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Musculoskeletal"
-  }
-}
+#rm(cardiovascular, digestive, endocrine, integumentary, lymphatic, musculoskeletal, nervous, reproductive, respiratory, urinary)
 ```
 
 #save
 ```{r}
-saveRDS(sample_master_meta, "../data/LW_sample_master_meta.rds")
-sample_master_meta <- LW_sample_master_meta
-#compare
-library(arsenal)
-sample_master_meta <- rownames_to_column(sample_master_meta, var = "rse_sampname")
-
-#tidy up df
-#tidymeta <- function(x) {
-#  if(is.character(x) == TRUE){
-#    str_to_title(x)
-#  }
-#}
-sample_master_meta <- apply(sample_master_meta, 2, tidymeta)
-
-meta_differences <- comparedf(sample_master_meta, averys_meta, by = "rse_sampname")
-summary(meta_differences)
-diffs(meta_differences, vars = c("source",          "origin",          "sample_name",     "tissue",          "cell_line",       "disease",        
-  "sequencer",       "sex",             "race",            "readlength",      "tissue_coerced",  "disease_coerced", "tissue_groups"))
-diffs(meta_differences, vars = c("source", "origin"))
-```
-
-# clean up
-```{r clean up env}
-rm(cardiovascular, digestive, endocrine, integumentary, lymphatic, musculoskeletal, nervous, reproductive, respiratory, urinary)
+#saveRDS(sample_master_meta, "../data/LW_sample_master_meta.rds")
+#sample_master_meta <- LW_sample_master_meta
+##compare
+#library(arsenal)
+#sample_master_meta <- rownames_to_column(sample_master_meta, var = "rse_sampname")
+#
+##tidy up df
+##tidymeta <- function(x) {
+##  if(is.character(x) == TRUE){
+##    str_to_title(x)
+##  }
+##}
+#sample_master_meta <- apply(sample_master_meta, 2, tidymeta)
+#
+#meta_differences <- comparedf(sample_master_meta, averys_meta, by = "rse_sampname")
+#summary(meta_differences)
+#diffs(meta_differences, vars = c("source",          "origin",          "sample_name",     "tissue",          "cell_line",       "disease",        
+#  "sequencer",       "sex",             "race",            "readlength",      "tissue_coerced",  "disease_coerced", "tissue_groups"))
+#diffs(meta_differences, vars = c("source", "origin"))
 ```
