@@ -106,14 +106,13 @@ getSRAproj <- function(project, cellosaurusfilepath, savefilepath){
 
 ########TCGA FUNCTION
 getTCGArse <- function(project, savefilepath){
+  #project- a character string with the project name
   #check for rse, tpm, and raw_counts folders
   checkfolders(savefilepath)
   
   #in recount3, TCGA is split up by tissue for projects
   #proj <- c("BRCA","KIRC","LUAD","UCEC","THCA","PRAD","LUSC","HNSC","COAD","LGG","SKCM","LAML", "STAD","BLCA","OV","LIHC",
   #          "KIRP","CESC","SARC","ESCA","PCPG","PAAD","READ","GBM","TGCT","THYM","KICH","MESO","UVM","ACC","UCS","DLBC","CHOL")
-  
-  #foreach(i = 1:length(projects), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
     rse <- recount3::create_rse_manual(
       project = project,
       project_home = "data_sources/tcga",
@@ -138,23 +137,26 @@ getTCGArse <- function(project, savefilepath){
 
 ########GTEX FUNCTION
 getGTEXrse <- function(project, savefilepath){
+  #project- a character string with the project name
   #check for rse, tpm, and raw_counts folders
   checkfolders(savefilepath)
-
+  
   #in recount3, GTEx is split up by tissue for projects
   #projects <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", 
   #          "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", 
   #          "PROSTATE", "SPLEEN", "LIVER", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", 
   #          "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
   
-  #foreach(i = 1:length(projects), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
-    rse <- recount3::create_rse_manual(
-      project = project,
-      project_home = "data_sources/gtex",
-      organism = "human",
-      annotation = "gencode_v26",
-      type = "gene"
-    )
+  rse <- recount3::create_rse_manual(
+    project = project,
+    project_home = "data_sources/gtex",
+    organism = "human",
+    annotation = "gencode_v26",
+    type = "gene"
+    
+  )
+      
+
     #require(recount3)
     rse <- rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
     assay(rse, "counts") <- recount3::transform_counts(rse)
