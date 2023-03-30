@@ -105,19 +105,18 @@ getSRAproj <- function(project, cellosaurusfilepath, savefilepath){
 
 
 ########TCGA FUNCTION
-getTCGArse <- function(project = "tcga", savefilepath){
+getTCGArse <- function(project, savefilepath){
   #check for rse, tpm, and raw_counts folders
   checkfolders(savefilepath)
-  proj_home <- "data_sources/tcga" #project home for recount3
-  #in recount3, TCGA is split up by tissue for projects
-  proj <- c("BRCA","KIRC","LUAD","UCEC","THCA","PRAD","LUSC","HNSC","COAD","LGG","SKCM","LAML", "STAD","BLCA","OV","LIHC","KIRP","CESC","SARC","ESCA","PCPG","PAAD","READ","GBM","TGCT","THYM","KICH","MESO","UVM","ACC","UCS","DLBC","CHOL")
-  #proj <- c("ACC","UCS","DLBC") #subset for testing
-  #proj <- c("ESCA","PAAD","SARC", "PCPG") #subset for testing
   
-  foreach(i = 1:length(proj), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
+  #in recount3, TCGA is split up by tissue for projects
+  #proj <- c("BRCA","KIRC","LUAD","UCEC","THCA","PRAD","LUSC","HNSC","COAD","LGG","SKCM","LAML", "STAD","BLCA","OV","LIHC",
+  #          "KIRP","CESC","SARC","ESCA","PCPG","PAAD","READ","GBM","TGCT","THYM","KICH","MESO","UVM","ACC","UCS","DLBC","CHOL")
+  
+  #foreach(i = 1:length(projects), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
     rse <- recount3::create_rse_manual(
-      project = proj[i],
-      project_home = proj_home,
+      project = project,
+      project_home = "data_sources/tcga",
       organism = "human",
       annotation = "gencode_v26",
       type = "gene"
@@ -129,72 +128,42 @@ getTCGArse <- function(project = "tcga", savefilepath){
     assay(rse, "counts") <- recount3::transform_counts(rse)
     assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
     
-    saveRDS(rse, paste(savefilepath, "rse/tcga_tissue/", paste(proj[i]), "_tcga_rse.rds", sep = ""))
+    saveRDS(rse, paste(savefilepath, "rse/tcga_tissue/", paste(project), "_tcga_rse.rds", sep = ""))
     #return(rse)
-  }
+    message(paste("Finished RSE pull and save for", project))
+ # }
   
 }
 
 
 ########GTEX FUNCTION
-getGTEXrse <- function(project = "gtex", savefilepath){
+getGTEXrse <- function(project, savefilepath){
   #check for rse, tpm, and raw_counts folders
   checkfolders(savefilepath)
-  
-  proj_home <- "data_sources/gtex"#project home for frecount3
+
   #in recount3, GTEx is split up by tissue for projects
-  proj <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", "PROSTATE", "SPLEEN", "LIVER", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
-  #proj <- c("COLON", "FALLOPIAN_TUBE") #subset for testing
+  #projects <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", 
+  #          "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", 
+  #          "PROSTATE", "SPLEEN", "LIVER", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", 
+  #          "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
   
-  foreach(i = 1:length(proj), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
+  #foreach(i = 1:length(projects), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
     rse <- recount3::create_rse_manual(
-      project = proj[i],
-      project_home = proj_home,
+      project = project,
+      project_home = "data_sources/gtex",
       organism = "human",
       annotation = "gencode_v26",
       type = "gene"
-      
     )
     #require(recount3)
     rse <- rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
     assay(rse, "counts") <- recount3::transform_counts(rse)
     assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
     
-    saveRDS(rse, paste(savefilepath, "rse/gtex_tissue/", paste(proj[i]), "_gtex_rse.rds", sep = ""))
+    saveRDS(rse, paste(savefilepath, "rse/gtex_tissue/", paste(project), "_gtex_rse.rds", sep = ""))
     #return(rse)
-  }
-  
-}
-
-getTCGArse <- function(project = "tcga", savefilepath){
-  #check for rse, tpm, and raw_counts folders
-  checkfolders(savefilepath)
-  proj_home <- "data_sources/tcga" #project home for recount3
-  #in recount3, TCGA is split up by tissue for projects
-  #proj <- c("BRCA","KIRC","LUAD","UCEC","THCA","PRAD","LUSC","HNSC","COAD","LGG","SKCM","LAML", "STAD","BLCA","OV","LIHC","KIRP","CESC","SARC","ESCA","PCPG","PAAD","READ","GBM","TGCT","THYM","KICH","MESO","UVM","ACC","UCS","DLBC","CHOL")
-  #proj <- c("ACC","GBM","KICH", "MESO", "UVM") #subset for testing
-  proj <- c("ACC","KICH", "MESO") #subset for testing
-  #proj <- c("ESCA","PAAD","SARC", "PCPG") #subset for testing
-  
-  foreach(i = 1:length(proj), .packages = "recount3") %dopar% { #run loops in parallel, outputs a combined list
-    rse <- recount3::create_rse_manual(
-      project = proj[i],
-      project_home = proj_home,
-      organism = "human",
-      annotation = "gencode_v26",
-      type = "gene"
-      
-    )
-    
-    rse <- rse[,grep("Primary", rse@colData@listData[["tcga.cgc_sample_sample_type"]])]
-    #require(recount3)
-    assay(rse, "counts") <- recount3::transform_counts(rse)
-    assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
-    
-    saveRDS(rse, paste(savefilepath, "rse/tcga_tissue/", paste(proj[i]), "_tcga_rse.rds", sep = ""))
-    #return(rse)
-  }
-  
+    message(paste("Finished RSE pull and save for", project))
+  #}
 }
 
 
