@@ -113,19 +113,19 @@ getTCGArse <- function(project, savefilepath){
   #in recount3, TCGA is split up by tissue for projects
   #proj <- c("BRCA","KIRC","LUAD","UCEC","THCA","PRAD","LUSC","HNSC","COAD","LGG","SKCM","LAML", "STAD","BLCA","OV","LIHC",
   #          "KIRP","CESC","SARC","ESCA","PCPG","PAAD","READ","GBM","TGCT","THYM","KICH","MESO","UVM","ACC","UCS","DLBC","CHOL")
+
   rse <- recount3::create_rse_manual(
     project = project,
     project_home = "data_sources/tcga",
     organism = "human",
     annotation = "gencode_v26",
     type = "gene"
-    
   )
   
-  rse <- rse[,grep("Primary", rse@colData@listData[["tcga.cgc_sample_sample_type"]])]
-  #require(recount3)
-  assay(rse, "counts") <- recount3::transform_counts(rse)
-  assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
+    #require(recount3)
+    rse <- rse[,grep("Primary", rse@colData@listData[["tcga.cgc_sample_sample_type"]])]
+    assay(rse, "counts") <- recount3::transform_counts(rse)
+    assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
   
   saveRDS(rse, paste(savefilepath, "rse/tcga_tissue/", paste(project), "_tcga_rse.rds", sep = ""))
   #return(rse)
@@ -153,14 +153,12 @@ getGTEXrse <- function(project, savefilepath){
     organism = "human",
     annotation = "gencode_v26",
     type = "gene"
-    
   )
-  
-  
-  #require(recount3)
-  rse <- rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
-  assay(rse, "counts") <- recount3::transform_counts(rse)
-  assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
+      
+    #require(recount3)
+    rse <- rse[,grep("RNASEQ", rse@colData@listData$gtex.smafrze)]
+    assay(rse, "counts") <- recount3::transform_counts(rse)
+    assays(rse)$TPM <- recount::getTPM(rse, length_var = "bp_length")
   
   saveRDS(rse, paste(savefilepath, "rse/gtex_tissue/", paste(project), "_gtex_rse.rds", sep = ""))
   #return(rse)
