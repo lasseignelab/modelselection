@@ -376,7 +376,7 @@ cor_dismatch_res_contis <- rbind(cor_dismatch_res_contis_cl, cor_dismatch_res_co
 cor_can_all_tis <- "x"
 for(i in 1:ncol(cor_dismatch_res_cantis)){
   cor_can_all_tis <- rbind(cor_can_all_tis, cor_dismatch_res_cantis[i])
-  if(i != 27){
+  if(i != length(cor_dismatch_res_cantis)){
     colnames(cor_can_all_tis) <- colnames(cor_dismatch_res_cantis[i+1])
   }
 }
@@ -390,7 +390,7 @@ for(i in tissue[-1]){
 }
 
 clpdx <- c(rep("Cell Line", 35), rep("PDX", 65))
-clpdx <- rep(clpdx, 27)
+clpdx <- rep(clpdx, length(tissue))
 
 cor_dismatch_cantis_long <- data.frame(cor = cor_can_all_tis, tissue = tissue_rep, Model = clpdx)
 cor_dismatch_cantis_long$cor <- as.numeric(cor_dismatch_cantis_long$cor)
@@ -422,7 +422,7 @@ for(i in tissue[-1]){
 }
 
 clpdx <- c(rep("Cell Line", 35), rep("PDX", 65))
-clpdx <- rep(clpdx, 34)
+clpdx <- rep(clpdx, length(tissue))
 
 cor_dismatch_contis_long <- data.frame(cor = cor_con_all_tis, tissue = tissue_rep, Model = clpdx)
 cor_dismatch_contis_long$cor <- as.numeric(cor_dismatch_contis_long$cor)
