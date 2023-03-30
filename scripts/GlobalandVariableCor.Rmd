@@ -40,7 +40,7 @@ gbm_tis_samples <- gbm_samples[gbm_samples %in% sample_master_meta[sample_master
 bt_samples <- sample_master_meta[grep("Brain Cancer", sample_master_meta$disease_coerced),]$rse_sampname
 
 # samples that are control brain
-bcon_samples <- sample_master_meta[grep("Normal Brain", sample_master_meta$disease_coerced),]$rse_sampname
+bcon_samples <- sample_master_meta[grep("NonDisease Brain", sample_master_meta$disease_coerced),]$rse_sampname
 
 # subset master sample metadata to brain
 sample_brain_meta <- data.frame(sample_master_meta[sample_master_meta$rse_sampname %in% brain_samples,])
@@ -104,7 +104,7 @@ autoplot(brain_pcares, data = brain_tpm_meta, colour = "origin", x = 2, y = 3)
 ## using autoplot because too many options for density rug plot
 ## fix some metadata for cell line type first
 ## NAs in cell_line col mean exclude NAs then subset
-sample_brain_meta[!is.na(sample_brain_meta$cell_line) & sample_brain_meta$cell_line=="u251mg_",]$cell_line <- "u251mg"
+#sample_brain_meta[!is.na(sample_brain_meta$cell_line) & sample_brain_meta$cell_line=="u251mg_",]$cell_line <- "u251mg" ##removed when filtering for GBM-derived CL's
 #sample_brain_meta[!is.na(sample_brain_meta$cell_line) & sample_brain_meta$cell_line=="shsy5y_",]$cell_line <- "shsy5y" #removed when filtering for GBM-derived CL's
 
 # need to make and re-filt tpm matrix for just cell lines
@@ -129,12 +129,12 @@ all_pca <- pca(t(brain_tpm_filt), ncomp = 3, scale = TRUE)
 saveRDS(all_pca, "../data/pca_brain.rds")
 
 # making origin factor
-brain_meta_sub <- matrix(sample_brain_meta[,2])
+brain_meta_sub <- matrix(sample_brain_meta[,"origin"])
 rownames(brain_meta_sub) <- sample_brain_meta$rse_sampname
-brain_meta_sub[brain_meta_sub == "Normal Tissue",] <- "Non-Disease Tissue"
+#brain_meta_sub[brain_meta_sub == "NonDisease Tissue",] <- "Non-Disease Tissue"
 brain_fact_origin <- factor(brain_meta_sub)
 
-brain_meta_sub <- matrix(sample_brain_meta[,1])
+brain_meta_sub <- matrix(sample_brain_meta[,"source"])
 rownames(brain_meta_sub) <- sample_brain_meta$rse_sampname
 brain_fact_cohort <- factor(brain_meta_sub)
 
@@ -159,7 +159,7 @@ Scatter_Density(object = all_pca, batch = brain_fact_sex, color.set = colorset, 
 
 # clean env
 rm(brain_meta_sub, brain_fact_cohort, brain_fact_origin)
-rm(all_pca)# be careful if you still need this, obj takes a while to generate
+#rm(all_pca)# be careful if you still need this, obj takes a while to generate
 gc()
 ```
 
@@ -219,9 +219,9 @@ length(cor_bestmatch_pdx[cor_bestmatch_pdx$samp_origin == cor_bestmatch_pdx$res_
 
 other correlations for cell lines:
 * cervical cancer = 1
-* normal adrenal gland = 20
-* normal blood vessel = 3
-* normal uterus = 2
+* NonDisease adrenal gland = 20
+* NonDisease blood vessel = 3
+* NonDisease uterus = 2
 * pleural cancer = 2
 * skin cancer = 5
 * soft tissue cancer = 1
@@ -233,9 +233,9 @@ other correlations for cell lines:
 # annotating rows and columns
 annotation_col <- data.frame(Model = sample_brain_meta[grep("Cell Line|PDX", sample_brain_meta$origin),]$origin)
 rownames(annotation_col) <- sample_brain_meta[grep("Cell Line|PDX", sample_brain_meta$origin),]$rse_sampname
-annotation_row <- data.frame(Tissue = sample_brain_meta[grep("Tumor Tissue|Normal Tissue", sample_brain_meta$origin),]$origin)
-rownames(annotation_row) <- sample_brain_meta[grep("Tumor Tissue|Normal Tissue", sample_brain_meta$origin),]$rse_sampname
-annotation_row$Tissue[annotation_row$Tissue == "Normal Tissue"] <- "Non-Disease Tissue"
+annotation_row <- data.frame(Tissue = sample_brain_meta[grep("Tumor Tissue|NonDisease Tissue", sample_brain_meta$origin),]$origin)
+rownames(annotation_row) <- sample_brain_meta[grep("Tumor Tissue|NonDisease Tissue", sample_brain_meta$origin),]$rse_sampname
+annotation_row$Tissue[annotation_row$Tissue == "NonDisease Tissue"] #<- "Non-Disease Tissue" #updated in metatable now
 colnames(annotation_row) <- "Brain Tissue Type"
 
 pheatmap(fullcor_brain, annotation_col = annotation_col, annotation_row = annotation_row, show_rownames = FALSE, show_colnames = FALSE, color = colorRampPalette(c("yellow", "red"))(200))
@@ -365,8 +365,8 @@ cor_dismatch_res_bytis_pdx <- cor_dismatch_res_bytis[rownames(cor_dismatch_res_b
 cor_dismatch_res_cantis_cl <- cor_dismatch_res_bytis_cl[,grep("Cancer", colnames(cor_dismatch_res_bytis_cl))]
 cor_dismatch_res_cantis_pdx <- cor_dismatch_res_bytis_pdx[,grep("Cancer", colnames(cor_dismatch_res_bytis_pdx))]
 
-cor_dismatch_res_contis_cl <- cor_dismatch_res_bytis_cl[,grep("Normal", colnames(cor_dismatch_res_bytis_cl))]
-cor_dismatch_res_contis_pdx <- cor_dismatch_res_bytis_pdx[,grep("Normal", colnames(cor_dismatch_res_bytis_pdx))]
+cor_dismatch_res_contis_cl <- cor_dismatch_res_bytis_cl[,grep("NonDisease", colnames(cor_dismatch_res_bytis_cl))]
+cor_dismatch_res_contis_pdx <- cor_dismatch_res_bytis_pdx[,grep("NonDisease", colnames(cor_dismatch_res_bytis_pdx))]
 
 # make big objects for split violin
 cor_dismatch_res_cantis <- rbind(cor_dismatch_res_cantis_cl, cor_dismatch_res_cantis_pdx)
@@ -415,7 +415,7 @@ for(i in 1:ncol(cor_dismatch_res_contis)){
 cor_con_all_tis <- cor_con_all_tis[-1,]
 
 tissue <- colnames(cor_dismatch_res_contis)
-tissue <- stringr::str_remove_all(tissue, "Normal ")
+tissue <- stringr::str_remove_all(tissue, "NonDisease ")
 tissue_rep <- rep(tissue[1], 100)
 for(i in tissue[-1]){
   tissue_rep <- c(tissue_rep, rep(i, 100))
