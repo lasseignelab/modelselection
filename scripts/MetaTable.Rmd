@@ -39,7 +39,7 @@ tcga and gtex
 tcga_meta_adj <- tcga_meta %>% 
   mutate(., source = "TCGA", origin = "Tumor Tissue", rse_samp_name = rownames(tcga_meta), tissue = `tcga.gdc_cases.project.primary_site`, cell_line = NA, 
          disease = `tcga.gdc_cases.project.name`, sequencer = `tcga.gdc_platform`, sex = str_to_title(`tcga.gdc_cases.demographic.gender`), 
-         race = str_to_title(`tcga.gdc_cases.demographic.race`), readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% replace_na(list(sex = "Not Reported", race = "Not reported")) %>% #replace NAs with 'not reported'
+         race = str_to_title(`tcga.gdc_cases.demographic.race`), readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% replace_na(list(sex = "Not Reported", race = "Not Reported")) %>% #replace NAs with 'not reported'
   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
 
  gtex_meta_adj <- gtex_meta %>% 
@@ -159,3 +159,6 @@ View(meta_differences[["vars.summary"]][["values"]][[12]]) #check differences by
 #after updates to metadata, found differences compared to the original in 'control' -> 'nondisease' rewording, differences in tissue (but not carried over to tissue_coerced, which is the only thing used), differences in cell line upper/lower case, differences in tissue upper/lower case
 ```
 
+```{r}
+sessionInfo()
+```

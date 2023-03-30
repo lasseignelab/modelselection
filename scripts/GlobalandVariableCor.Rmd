@@ -468,3 +468,7 @@ for(i in unique(cor_dismatch_contis_long$tissue)){
 saveRDS(cor_dismatch_stattest_alltis, "../data/cor_wilcox_matches_alltissues.rds")
 # basically, they're all significant
 ```
+
+```{r}
+sessionInfo()
+```

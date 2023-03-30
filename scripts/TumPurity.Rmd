@@ -78,3 +78,7 @@ saveRDS(purity_genes, "../data/purity_genes.rds")
 rm(purity_info_pca, tcga_barcode, TCGA, tumors_purity, tmp, tmp.df, tmp.df.sig, purity_genes, tcga_rse)
 gc()
 ```
+
+```{r}
+sessionInfo()
+```

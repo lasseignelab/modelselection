@@ -99,3 +99,7 @@ print(endTime - startTime)
 ```{r clean environment}
 rm(iqr_gene, tcga_varying_genes, gtex_varying_genes, project, subset_num, var_source, rse_sub, subset_sub, var_sub, project_sub, i, purity_genes)
 ```
+
+```{r}
+sessionInfo()
+```
