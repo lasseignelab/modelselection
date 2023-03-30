@@ -19,8 +19,8 @@ suppressPackageStartupMessages({
   library(parallel)
   library(doParallel)
   library(tidyverse)
+  library(vroom)
 })
-
 ```
 
 # utilize functions in rec3_rse_download.R
@@ -41,25 +41,45 @@ print(endTime - startTime) # Time difference of 5.324986 mins
 Due to large project sizes and sub-projects by tissue for TCGA and GTEx: getTCGArse() and getGTEXrse() are used to pull RSE's, run TPM calculation, and save whole RSE's as .rds files in 'rse' folder while running in parallel. Then getRawCounts() and getTPM() are used to run in parallel pulling in each RSE for GTEx and TCGA and then bind TPM and raw counts matrices and save them in 'tpm' and 'raw_counts' folders, respectively
 
 ```{r}
+#GTEx
+projects <- c("BRAIN", "SKIN", "ESOPHAGUS", "BLOOD", "BLOOD_VESSEL", "ADIPOSE_TISSUE", "HEART", "MUSCLE", "COLON", 
+            "THYROID", "NERVE", "LUNG", "BREAST", "TESTIS", "STOMACH", "PANCREAS", "PITUITARY", "ADRENAL_GLAND", 
+            "PROSTATE", "SPLEEN", "LIVER", "OVARY", "SMALL_INTESTINE", "SALIVARY_GLAND", "VAGINA", "UTERUS", 
+            "KIDNEY", "BLADDER", "CERVIX_UTERI", "FALLOPIAN_TUBE")
+
 cl <- makeCluster(8)
 registerDoParallel(cl, cores = 8)
 startTime <- Sys.time()
-#GTEx
-getGTEXrse(savefilepath = "../data/recount3/")
+
+foreach(i = 1:length(projects), .packages = "recount3") %dopar% (getGTEXrse(project = projects[i], savefilepath = "../data/recount3/"))
+
 getRawCounts(project = "gtex", savefilepath = "../data/recount3/rse/gtex_tissue/") %>% saveRDS(file = "../data/recount3/raw_counts/gtex_rawcounts.rds")
 getTPM(project = "gtex", savefilepath = "../data/recount3/rse/gtex_tissue/") %>% saveRDS(file = "../data/recount3/tpm/gtex_tpm.rds")
+
 endTime <- Sys.time()
 print(endTime - startTime) # Time difference of 1.00549 hours | 45.12318 mins
+stopCluster(cl) 
 gc()
+```
  
-#TCGA
+ 
+```{r}
+ #TCGA
+ projects <- c("BRCA","KIRC","LUAD","UCEC","THCA","PRAD","LUSC","HNSC","COAD","LGG","SKCM","LAML", "STAD","BLCA","OV","LIHC",
+            "KIRP","CESC","SARC","ESCA","PCPG","PAAD","READ","GBM","TGCT","THYM","KICH","MESO","UVM","ACC","UCS","DLBC","CHOL")
+ 
+ cl <- makeCluster(8)
+registerDoParallel(cl, cores = 8)
 startTime <- Sys.time()
-getTCGArse(savefilepath = "../data/recount3/")
+
+foreach(i = 1:length(projects), .packages = "recount3") %dopar% (getTCGArse(project = projects[i], savefilepath = "../data/recount3/"))
+
 getRawCounts(project = "tcga", savefilepath = "../data/recount3/rse/tcga_tissue/") %>% saveRDS(file = "../data/recount3/raw_counts/tcga_rawcounts.rds")
 getTPM(project = "tcga", savefilepath = "../data/recount3/rse/tcga_tissue/") %>% saveRDS(file = "../data/recount3/tpm/tcga_tpm.rds")
 endTime <- Sys.time()
 print(endTime - startTime) # Time difference of 29.60129 mins | 20.82154 mins
 stopCluster(cl) 
+gc()
 ```
 
 

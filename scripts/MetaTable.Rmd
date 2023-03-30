@@ -82,6 +82,7 @@ hpa_t_rse_adj <- hpa_t_rse %>%
          readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>%
   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
 hpa_t_rse_adj[hpa_t_rse_adj$tissue == "Homo Sapiens",]$tissue <- str_to_title(hpa_t_rse[hpa_t_rse$sra_attribute.organism_part == "Homo sapiens",]$sra_attribute.INSDC_status) # a few cells' columns of this RSE are shifted to the left for some reason
+
 ```
 
 CCLE and PDX
@@ -97,7 +98,9 @@ pdx_rse_adj <- pdx_rse %>%
   mutate(., source = "PDX", origin = "PDX", rse_samp_name = rownames(pdx_rse), tissue = "Brain", cell_line = NA, disease = "Glioblastoma", sequencer = "Illumina HiSeq", 
          sex = str_to_title(sra_attribute.sex), race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+
 ```
+
 combine and adjust
 ```{r}
 sample_master_meta <- rbind(tcga_meta_adj, gtex_meta_adj, bone_c_rse_adj, bone_n_rse_adj, bone_t_rse_adj, hpa_c_rse_adj, hpa_t_rse_adj, ccle_rse_adj, pdx_rse_adj)
@@ -138,7 +141,7 @@ sample_master_meta <- rownames_to_column(sample_master_meta, var = "rse_sampname
 saveRDS(sample_master_meta, "../data/sample_master_meta.rds")
 ```
 
-#compare results (remove after code review)
+#compare results (remove chunk after code review)
 ```{r}
 averys_meta <- readRDS("../data/OLD_sample_master_meta.rds")
 ##compare
@@ -155,3 +158,4 @@ View(meta_differences[["vars.summary"]][["values"]][[12]]) #check differences by
 #tolerable differences in 3, 4, 5, 6, 8, 9, 11, 12:
 #after updates to metadata, found differences compared to the original in 'control' -> 'nondisease' rewording, differences in tissue (but not carried over to tissue_coerced, which is the only thing used), differences in cell line upper/lower case, differences in tissue upper/lower case
 ```
+
