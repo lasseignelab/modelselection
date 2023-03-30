@@ -73,7 +73,7 @@ rm(i, id, sub, var, cor_temp)
 # Plot how % mapping to origin changes between subsets
 ```{r}
 corr_table <- data.frame(genes_included = factor(c(rep(100,4),rep(1000,4),rep(5000,4),rep(10000,4))), percent_map_to_origin = percent_map_to_origin[-17], Variation = rep(c("TCGA", "TCGA", "GTEx", "GTEx"),4), Purity = rep(c("Included", "Excluded"),8))
-library(ggplot2)
+
 ggplot(corr_table, aes(x = genes_included, y = percent_map_to_origin, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + geom_hline(yintercept=percent_map_to_origin[17], color="darkslategray") + labs(x = "Number of Genes Included", y = "% of Cell Lines That Correlate Highest to Origin Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13)) + scale_linetype_manual(values=c("dashed", "solid"))
 ggsave("../plots/percentmaptoorigin.png", units = "px", width = 2200, height = 1500)
 rm(percent_map_to_origin, corr_table)
@@ -109,7 +109,6 @@ colnames(tissuecormatch_med_res) <- c("oneH_I_T", "oneH_E_T", "oneH_I_G", "oneH_
 ```{r}
 corr_median_lp <- data.frame(gene_set_size = factor(rep(c(100,1000,5000,10000), 4)), Purity = c(rep("Included", 4), rep("Excluded", 4), rep("Included", 4), rep("Excluded", 4)), Variation = c(rep("TCGA", 8), rep("GTEx", 8)), median_cor_across_tissues = c(median(tissuecormatch_med_res$oneH_I_T), median(tissuecormatch_med_res$oneK_I_T), median(tissuecormatch_med_res$fiveK_I_T), median(tissuecormatch_med_res$tenK_I_T), median(tissuecormatch_med_res$oneH_E_T), median(tissuecormatch_med_res$oneK_E_T), median(tissuecormatch_med_res$fiveK_E_T), median(tissuecormatch_med_res$tenK_E_T), median(tissuecormatch_med_res$oneH_I_G), median(tissuecormatch_med_res$oneK_I_G), median(tissuecormatch_med_res$fiveK_I_G), median(tissuecormatch_med_res$tenK_I_G), median(tissuecormatch_med_res$oneH_E_G), median(tissuecormatch_med_res$oneK_E_G), median(tissuecormatch_med_res$fiveK_E_G), median(tissuecormatch_med_res$tenK_E_G)))
 
-library(ggplot2)
 ggplot(corr_median_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(yintercept=median(tissuecormatch_med_res$ALL), color="darkslategray", linetype="dashed") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13))
 
 ggsave("../plots/medcortoorigin.png", units = "px", width = 2200, height = 1500)
@@ -132,7 +131,6 @@ for(i in c(100, 1000, 5000, 10000)){
 }
 
 # for each set, take the median
-library(matrixStats)
 
 subset_medians <- c()
 subsets <- c()
@@ -193,7 +191,6 @@ subset_table_lp[grep("inc", subset_table_lp$name),]$Purity <- "Included"
 subset_table_lp[grep("exc", subset_table_lp$name),]$Purity <- "Excluded"
 
 # plot
-library(ggplot2)
 ggplot(subset_table_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(aes(yintercept=subset_medians[17]), color="darkslategray") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13)) + scale_linetype_manual(values=c("dashed", "solid"))
 
 ggsave("../plots/medcortoorigin_fromfullcor.png", units = "px", width = 2200, height = 1500) # this is used in final over other one
@@ -255,7 +252,7 @@ rownames(tissuecormatch_med_res_annorow) <- c(substr(rownames(tissuecormatch_med
 
 ```{r}
 # column annotations
-column_ha <- HeatmapAnnotation(df = as.data.frame(t(tissuecormatch_med_res_annorow[23:25,])),
+column_ha <- HeatmapAnnotation(df = as.data.frame(t(tissuecormatch_med_res_annorow[c("Subset Size", "Tumor Purity", "Variance"),])),
                                col = list("Subset Size" = c("  100" = "#C86991", " 1000" = "#FEE440", " 5000" = "#328651", "10000" = "#00BBF9", "63856" = "#9B5DE5"),
                                           "Tumor Purity" = c("Included" = "#3C8EA9", "Excluded" = "#F15BB5"),
                                           "Variance" = c("TCGA" = "#00F5D4", "GTEx" = "#77267D", "All" = "#F5743D"))) # idk why the spaces are/need to be in sub size but they do
