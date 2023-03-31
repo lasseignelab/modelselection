@@ -596,3 +596,7 @@ ann_colors <- list("Tissue Type" = c('Non-Disease' = "darkblue", Tumor = "orange
 ComplexHeatmap::pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors, fontface = "bold")
 dev.off()
 ```
+
+```{r}
+sessionInfo()
+```

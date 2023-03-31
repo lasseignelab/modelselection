@@ -86,4 +86,6 @@ stopCluster(cl)
 gc()
 ```
 
-
+```{r}
+sessionInfo()
+```

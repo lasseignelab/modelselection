@@ -27,26 +27,19 @@ tcga_meta <- getMetadata("../data/recount3/rse/tcga_tissue")
 gtex_meta <- getMetadata("../data/recount3/rse/gtex_tissue")
 stopCluster(cl) 
 ```
-
+# tissue source for HPA tissues
 ```{r write out hpa tissues}
 # hpa metadata doesn't specify general tissue source
 hpa_tissues <- c("Skin", "Skin", "Brain", "Brain", "Bone", "Lung", "Lung", "Colon", "Colon", "Kidney", "Kidney", "Cervix", "Cervix", "Liver", "Liver", "Breast", "Breast", "Prostate", "Prostate", "Bladder", "Bladder", "Brain", "Brain")
 ```
 
-# need to fix demographics for gtex, tissue source for HPA tissues
-```{r gtex sex}
-gtex_meta$gtex.sex[grep(1, gtex_meta$gtex.sex)] <- "Male"
-gtex_meta$gtex.sex[grep(2, gtex_meta$gtex.sex)] <- "Female"
-```
-
 # build metadata data frame
-```{r sample master metadata, eval=FALSE, include=FALSE}
-startTime <- Sys.time()
-
+tcga and gtex
+```{r sample master metadata}
 tcga_meta_adj <- tcga_meta %>% 
   mutate(., source = "TCGA", origin = "Tumor Tissue", rse_samp_name = rownames(tcga_meta), tissue = `tcga.gdc_cases.project.primary_site`, cell_line = NA, 
          disease = `tcga.gdc_cases.project.name`, sequencer = `tcga.gdc_platform`, sex = str_to_title(`tcga.gdc_cases.demographic.gender`), 
-         race = str_to_title(`tcga.gdc_cases.demographic.race`), readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+         race = str_to_title(`tcga.gdc_cases.demographic.race`), readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% replace_na(list(sex = "Not Reported", race = "Not Reported")) %>% #replace NAs with 'not reported'
   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
 
  gtex_meta_adj <- gtex_meta %>% 
@@ -54,8 +47,10 @@ tcga_meta_adj <- tcga_meta %>%
           sequencer = "Illumina HiSeq", sex = ifelse(gtex.sex == 1, "Male", ifelse(gtex.sex == 2, "Female", "Not Reported")), race = "Not Reported", 
           readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
    dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+```
 
-
+bone studies
+```{r}
 bone_n_rse_adj <- bone_n_rse %>% 
   mutate(., source = "BONE", origin = "NonDisease Tissue", rse_samp_name = rownames(bone_n_rse), tissue = "Bone", cell_line = NA, disease = "NonDisease Bone", 
          sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
@@ -71,8 +66,10 @@ bone_t_rse_adj <- bone_t_rse %>%
   mutate(., source = "BONE", origin = "Tumor Tissue", rse_samp_name = rownames(bone_t_rse), tissue = "Bone", cell_line = NA, disease = "Osteosarcoma", 
          sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
+```
 
-
+human protein atlas
+```{r}
 hpa_c_rse_adj <- hpa_c_rse %>% 
   mutate(., source = "HPA CL", origin = "Cell Line", rse_samp_name = rownames(hpa_c_rse), tissue = hpa_tissues, cell_line = str_sub(`sra.sample_name`, end = -2), 
          disease = str_to_title(str_sub(`sra.sample_description`, end = -10)), sequencer = "Illumina HiSeq", sex = "Not Reported", race = "Not Reported", 
@@ -86,10 +83,15 @@ hpa_t_rse_adj <- hpa_t_rse %>%
   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
 hpa_t_rse_adj[hpa_t_rse_adj$tissue == "Homo Sapiens",]$tissue <- str_to_title(hpa_t_rse[hpa_t_rse$sra_attribute.organism_part == "Homo sapiens",]$sra_attribute.INSDC_status) # a few cells' columns of this RSE are shifted to the left for some reason
 
+```
+
+CCLE and PDX
+```{r}
 ccle_rse_adj <- ccle_rse %>% 
   mutate(., source ="CCLE", origin = "Cell Line", rse_samp_name = rownames(ccle_rse), tissue = str_to_title(gsub("_", " ", `sra_attribute.tissue`)), 
          cell_line = barebones_cellline(sra_attribute.cell_line), disease = str_to_title(gsub("_", " ", `sra_attribute.disease`)), sequencer = "Illumina HiSeq", 
-         sex = str_to_title(sra_attribute.sex), race = `sra_attribute.ethnicity`, readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+         sex = ifelse(sra_attribute.sex == "NA", "Not Reported", str_to_title(sra_attribute.sex)), race = ifelse(sra_attribute.ethnicity == "NA", "Not Reported", `sra_attribute.ethnicity`), readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+  #replace_na(list(sex = "Not Reported", race = "Not Reported")) %>%
   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
 
 pdx_rse_adj <- pdx_rse %>% 
@@ -97,6 +99,10 @@ pdx_rse_adj <- pdx_rse %>%
          sex = str_to_title(sra_attribute.sex), race = "Not Reported", readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
 
+```
+
+combine and adjust
+```{r}
 sample_master_meta <- rbind(tcga_meta_adj, gtex_meta_adj, bone_c_rse_adj, bone_n_rse_adj, bone_t_rse_adj, hpa_c_rse_adj, hpa_t_rse_adj, ccle_rse_adj, pdx_rse_adj)
 saveRDS(sample_master_meta, "../data/combined_projects_metadata.rds")
 
@@ -127,79 +133,32 @@ ifelse(disease_coerced %in% "Testis Cancer", "Testicular Cancer",
               ifelse(disease_coerced %in% "Cervix Cancer", "Cervical Cancer",
                      ifelse(disease_coerced %in% "Biliary System Cancer", "Biliary Cancer", disease_coerced)))))))))))
 
-endTime <- Sys.time()
-print(endTime - startTime) 
-```
-
-# identify how many of each cohort belong to a given disease or tissue group
-```{r metadata overview}
-# to view by data source (e.g., TCGA, GTEx, CCLE...)
-#View(data.frame(table(sample_master_meta$source, sample_master_meta$tissue_coerced, sample_master_meta$disease_coerced))[data.frame(table(sample_master_meta$source, sample_master_meta$tissue_coerced, sample_master_meta$disease_coerced))$Freq != 0,])
-
-# to view by origin type (Tumor Tissue, Non-Diseased Tissue, Cell Line...)
-#View(data.frame(table(sample_master_meta$origin, sample_master_meta$tissue_coerced, sample_master_meta$disease_coerced))[data.frame(table(sample_master_meta$origin, sample_master_meta$tissue_coerced, sample_master_meta$disease_coerced))$Freq != 0,])
-```
-
-# add broader tissue groups <- I don't think we actually ended up using these?
-```{r broad tissue groups}
-# digestive <- c("Biliary System", "Appendix", "Colon", "Esophagus", "Gallbladder", "Pancreas", "Rectum", "Salivary Gland", "Small Intestine", "Stomach", "Liver")
-# urinary <- c("Bladder", "Kidney")
-# cardiovascular <- c("Blood", "Blood Vessel", "Heart")
-# reproductive <- c("Fallopian Tube", "Cervix", "Ovary", "Uterus", "Vagina", "Testis", "Prostate", "Breast", "Placenta")
-# endocrine <- c("Adrenal Gland", "Pituitary", "Thyroid")
-# lymphatic <- c("Thymus", "Spleen")
-# nervous <- c("Brain", "Nerve", "Eye")
-# respiratory <- c("Lung", "Pleura")
-# integumentary <- c("Skin", "Head And Neck")
-# musculoskeletal <- c("Muscle", "Bone", "Soft Tissue", "Adipose Tissue")
-# 
-# sample_master_meta$tissue_groups <- NA
-# for(i in unique(sample_master_meta$tissue_coerced)){
-#   if(i %in% digestive){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Digestive"
-#   } else if(i %in% urinary){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Urinary"
-#   }else if(i %in% cardiovascular){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Cardiovascular"
-#   }else if(i %in% reproductive){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Reproductive"
-#   }else if(i %in% endocrine){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Endocrine"
-#   }else if(i %in% lymphatic){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Lymphatic"
-#   }else if(i %in% nervous){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Nervous"
-#   }else if(i %in% respiratory){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Respiratory"
-#   }else if(i %in% integumentary){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Integumentary"
-#   }else if(i %in% musculoskeletal){
-#     sample_master_meta[grep(i, sample_master_meta$tissue_coerced),]$tissue_groups <- "Musculoskeletal"
-#   }
-# }
-
-#rm(cardiovascular, digestive, endocrine, integumentary, lymphatic, musculoskeletal, nervous, reproductive, respiratory, urinary)
 ```
 
 #save
 ```{r}
-#saveRDS(sample_master_meta, "../data/LW_sample_master_meta.rds")
-#sample_master_meta <- LW_sample_master_meta
+sample_master_meta <- rownames_to_column(sample_master_meta, var = "rse_sampname")
+saveRDS(sample_master_meta, "../data/sample_master_meta.rds")
+```
+
+#compare results (remove chunk after code review)
+```{r}
+averys_meta <- readRDS("../data/OLD_sample_master_meta.rds")
 ##compare
-#library(arsenal)
-#sample_master_meta <- rownames_to_column(sample_master_meta, var = "rse_sampname")
-#
-##tidy up df
-##tidymeta <- function(x) {
-##  if(is.character(x) == TRUE){
-##    str_to_title(x)
-##  }
-##}
-#sample_master_meta <- apply(sample_master_meta, 2, tidymeta)
-#
-#meta_differences <- comparedf(sample_master_meta, averys_meta, by = "rse_sampname")
-#summary(meta_differences)
-#diffs(meta_differences, vars = c("source",          "origin",          "sample_name",     "tissue",          "cell_line",       "disease",        
-#  "sequencer",       "sex",             "race",            "readlength",      "tissue_coerced",  "disease_coerced", "tissue_groups"))
-#diffs(meta_differences, vars = c("source", "origin"))
+BiocManager::install("arsenal") #not in docker image , just for checking results
+library(arsenal) 
+averys_meta$tissue_groups <- NULL #removed, not used
+sample_master_meta$tissue_groups <- NULL 
+
+
+meta_differences <- comparedf(sample_master_meta, averys_meta, by = "rse_sampname") 
+summary(meta_differences)
+View(meta_differences)
+View(meta_differences[["vars.summary"]][["values"]][[12]]) #check differences by columns
+#tolerable differences in 3, 4, 5, 6, 8, 9, 11, 12:
+#after updates to metadata, found differences compared to the original in 'control' -> 'nondisease' rewording, differences in tissue (but not carried over to tissue_coerced, which is the only thing used), differences in cell line upper/lower case, differences in tissue upper/lower case
+```
+
+```{r}
+sessionInfo()
 ```
