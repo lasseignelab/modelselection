@@ -25,6 +25,9 @@ suppressPackageStartupMessages({
 
 # utilize functions in rec3_rse_download.R
 
+## Note: Error in read_metadata, cache issue
+If, at anytime during download, the error is given: "Error in read_metadata(file_retrieve(url = locate_url(project = project,  :'metadata_files' should point a local file that exists" -- clear cache using "recount3_cache_rm()" before proceeding.
+
 ## All non-TCGA/GTEx Studies
 getSRAproj function accepts available projects ("ccle", "hpa_c", "hpa_t", "pdx", "bone_t", "bone_n", "bone_c") and filepath to cellosaurus file (if repo was cloned, should be at ../data/problematic_celllines.csv) and pulls RSE's, fixes mislabels, calculates TPM, and saves whole RSE's as .rds files in 'rse' folder and RDS files for TPM and raw counts matrices in 'tpm' and 'raw_counts' folders, respectively
 ```{r}
