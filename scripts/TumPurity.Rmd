@@ -56,6 +56,7 @@ gc()
 tmp <- lapply(rownames(TCGA), function(x)cor.test(as.numeric(TCGA[x,]),tumors_purity$purity, method = "s", exact = FALSE)) # returned lots of warnings 'Warning in cor.test.default(as.numeric(TCGA[x, ]), tumors_purity$purity,  :
   # Cannot compute exact p-value with ties'
 # to overcome warnings, use exact = FALSE:  https://www.tutorialspoint.com/how-to-avoid-the-warning-cannot-compute-exact-p-value-with-ties-while-perform-correlation-test-for-spearman-s-correlation-in-r#:~:text=Since%20the%20spearman%20correlation%20coefficient,test%20function.
+# will still return warnings of standard deviation = 0 because some genes' counts rows are at 0 across all samples
 gc()
 
 tmp.df <- data.frame(sapply(tmp,function(x)x$p.value), sapply(tmp,function(x)x$estimate))
