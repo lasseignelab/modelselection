@@ -51,13 +51,15 @@ cl <- makeCluster(8)
 registerDoParallel(cl, cores = 8)
 startTime <- Sys.time()
 
-foreach(i = 1:length(projects), .packages = "recount3") %dopar% (getGTEXrse(project = projects[i], savefilepath = "../data/recount3/"))
+for( i in 1:length(projects)){
+  getGTEXrse(project = projects[i], savefilepath = "../data/recount3/")
+}
 
 getRawCounts(project = "gtex", savefilepath = "../data/recount3/rse/gtex_tissue/") %>% saveRDS(file = "../data/recount3/raw_counts/gtex_rawcounts.rds")
 getTPM(project = "gtex", savefilepath = "../data/recount3/rse/gtex_tissue/") %>% saveRDS(file = "../data/recount3/tpm/gtex_tpm.rds")
 
 endTime <- Sys.time()
-print(endTime - startTime) # Time difference of 1.00549 hours | 45.12318 mins
+print(endTime - startTime) # Time difference of 1.5
 stopCluster(cl) 
 gc()
 ```
@@ -72,14 +74,18 @@ gc()
 registerDoParallel(cl, cores = 8)
 startTime <- Sys.time()
 
-foreach(i = 1:length(projects), .packages = "recount3") %dopar% (getTCGArse(project = projects[i], savefilepath = "../data/recount3/"))
+for( i in 1:length(projects)){
+  getTCGArse(project = projects[i], savefilepath = "../data/recount3/")
+}
 
 getRawCounts(project = "tcga", savefilepath = "../data/recount3/rse/tcga_tissue/") %>% saveRDS(file = "../data/recount3/raw_counts/tcga_rawcounts.rds")
 getTPM(project = "tcga", savefilepath = "../data/recount3/rse/tcga_tissue/") %>% saveRDS(file = "../data/recount3/tpm/tcga_tpm.rds")
 endTime <- Sys.time()
-print(endTime - startTime) # Time difference of 29.60129 mins | 20.82154 mins
+print(endTime - startTime) # Time difference of 44 mins
 stopCluster(cl) 
 gc()
 ```
 
-
+```{r}
+sessionInfo()
+```

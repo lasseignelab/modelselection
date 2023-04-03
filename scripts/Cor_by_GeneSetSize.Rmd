@@ -200,45 +200,45 @@ ggsave("../plots/medcortoorigin_fromfullcor.png", units = "px", width = 2200, he
 ### these are not used in final version
 ```{r}
 # lengthwise dataframe
-tissuecormatch_med_cor_long <- c()
-for(i in 1:ncol(tissuecormatch_med_res)){
-  tissuecormatch_med_cor_long <- c(tissuecormatch_med_cor_long, tissuecormatch_med_res[,i])
-}
+#tissuecormatch_med_cor_long <- c()
+#for(i in 1:ncol(tissuecormatch_med_res)){
+#  tissuecormatch_med_cor_long <- c(tissuecormatch_med_cor_long, tissuecormatch_med_res[,i])
+#}
 
-tissuecormatch_med_bp <- data.frame(cor = tissuecormatch_med_cor_long, Cancer = rep(substr(rownames(tissuecormatch_med_res),1,nchar(rownames(tissuecormatch_med_res))-7), ncol(tissuecormatch_med_res)), Subset = c(rep(100,4 * nrow(tissuecormatch_med_res)), rep(1000,4 * nrow(tissuecormatch_med_res)), rep(5000,4 * nrow(tissuecormatch_med_res)), rep(10000,4 * nrow(tissuecormatch_med_res)), rep(63856, nrow(tissuecormatch_med_res))), Purity = c(rep(c(rep("inc",nrow(tissuecormatch_med_res)),rep("exc",nrow(tissuecormatch_med_res))),8), rep("All", nrow(tissuecormatch_med_res))), Variance = c(rep(c(rep("TCGA",nrow(tissuecormatch_med_res)*2),rep("GTEx",nrow(tissuecormatch_med_res)*2)),4), rep("All", nrow(tissuecormatch_med_res))))
+#tissuecormatch_med_bp <- data.frame(cor = tissuecormatch_med_cor_long, Cancer = #rep(substr(rownames(tissuecormatch_med_res),1,nchar(rownames(tissuecormatch_med_res))-7), ncol(tissuecormatch_med_res)), Subset = c(rep(100,4 * #nrow(tissuecormatch_med_res)), rep(1000,4 * nrow(tissuecormatch_med_res)), rep(5000,4 * nrow(tissuecormatch_med_res)), rep(10000,4 * #nrow(tissuecormatch_med_res)), rep(63856, nrow(tissuecormatch_med_res))), Purity = #c(rep(c(rep("inc",nrow(tissuecormatch_med_res)),rep("exc",nrow(tissuecormatch_med_res))),8), rep("All", nrow(tissuecormatch_med_res))), Variance = #c(rep(c(rep("TCGA",nrow(tissuecormatch_med_res)*2),rep("GTEx",nrow(tissuecormatch_med_res)*2)),4), rep("All", nrow(tissuecormatch_med_res))))
 
-ggplot(tissuecormatch_med_bp, aes(x = Cancer, y = cor, size = Subset, color = Variance, shape = Purity)) + geom_count() + theme(axis.text.x = element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue")
+#ggplot(tissuecormatch_med_bp, aes(x = Cancer, y = cor, size = Subset, color = Variance, shape = Purity)) + geom_count() + theme(axis.text.x = #element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue")
 
 # split into 2 to lessen complexity
-ggplot(tissuecormatch_med_bp[tissuecormatch_med_bp$Purity != "exc",], aes(x = Cancer, y = cor, size = Subset, color = Variance)) + geom_count() + theme(axis.text.x = element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue") + ggtitle("Including Tumor Purity-Correlated Genes") + ylim(0,1)
-ggsave("../plots/medcortoorigin_tissplit_incpur.png")
+#ggplot(tissuecormatch_med_bp[tissuecormatch_med_bp$Purity != "exc",], aes(x = Cancer, y = cor, size = Subset, color = Variance)) + geom_count() + #theme(axis.text.x = element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue") + ggtitle("Including Tumor #Purity-Correlated Genes") + ylim(0,1)
+#ggsave("../plots/medcortoorigin_tissplit_incpur.png")
 
-ggplot(tissuecormatch_med_bp[tissuecormatch_med_bp$Purity != "inc",], aes(x = Cancer, y = cor, size = Subset, color = Variance)) + geom_count() + theme(axis.text.x = element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue") + ggtitle("Excluding Tumor Purity-Correlated Genes") + ylim(0,1)
-ggsave("../plots/medcortoorigin_tissplit_excpur.png")
+#ggplot(tissuecormatch_med_bp[tissuecormatch_med_bp$Purity != "inc",], aes(x = Cancer, y = cor, size = Subset, color = Variance)) + geom_count() + #theme(axis.text.x = element_text(angle = 45, hjust=1)) + labs(y = "Median Correlation of Cell Lines to Matched Tissue") + ggtitle("Excluding Tumor Purity-Correlated Genes") + ylim(0,1)
+#ggsave("../plots/medcortoorigin_tissplit_excpur.png")
 ```
 
 # redo bubble plot as a heatmap
 ## trying including subset size as a row variable with cancer type, but becomes too long, so sticking with tissuecormatch_med_res object still
 ```{r}
-for(i in c("I_T", "E_T", "I_G", "E_G")){
-  colsub <- tissuecormatch_med_res[,grep(i, colnames(tissuecormatch_med_res))]
-  temp <- c(colsub[,1], colsub[,2], colsub[,3], colsub[,4])
-  if(which(c("I_T", "E_T", "I_G", "E_G") == i) == 1){
-    tissuecormatch_med_resedit <- (data.frame(col1 = temp))
-  } else if(which(c("I_T", "E_T", "I_G", "E_G") == i) != 1){
-    tissuecormatch_med_resedit <- cbind(tissuecormatch_med_resedit, temp)
-  }
-}
-colnames(tissuecormatch_med_resedit) <- c("I_T", "E_T", "I_G", "E_G")
-rownames(tissuecormatch_med_resedit) <- c(paste(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), "_100", sep = ""), paste(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), "_1000", sep = ""), paste(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), "_5000", sep = ""), paste(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), "_10000", sep = ""))
+#for(i in c("I_T", "E_T", "I_G", "E_G")){
+#  colsub <- tissuecormatch_med_res[,grep(i, colnames(tissuecormatch_med_res))]
+#  temp <- c(colsub[,1], colsub[,2], colsub[,3], colsub[,4])
+#  if(which(c("I_T", "E_T", "I_G", "E_G") == i) == 1){
+#    tissuecormatch_med_resedit <- (data.frame(col1 = temp))
+#  } else if(which(c("I_T", "E_T", "I_G", "E_G") == i) != 1){
+#    tissuecormatch_med_resedit <- cbind(tissuecormatch_med_resedit, temp)
+#  }
+#}
+#colnames(tissuecormatch_med_resedit) <- c("I_T", "E_T", "I_G", "E_G")
+#rownames(tissuecormatch_med_resedit) <- c(paste(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), "_100", sep #= ""), paste(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), "_1000", sep = ""), #paste(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), "_5000", sep = ""), #paste(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), "_10000", sep = ""))
 
 # add identifier columns/rows to make annotations easier
-tissuecormatch_med_resedit$setsize <- c(rep(100, length(rownames(tissuecormatch_med_res))), rep(1000, length(rownames(tissuecormatch_med_res))), rep(5000, length(rownames(tissuecormatch_med_res))), rep(10000, length(rownames(tissuecormatch_med_res))))
+#tissuecormatch_med_resedit$setsize <- c(rep(100, length(rownames(tissuecormatch_med_res))), rep(1000, length(rownames(tissuecormatch_med_res))), #rep(5000, length(rownames(tissuecormatch_med_res))), rep(10000, length(rownames(tissuecormatch_med_res))))
 
-tissuecormatch_med_resedit$cancer <- rep(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7),4)
+#tissuecormatch_med_resedit$cancer <- rep(substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7),4)
 
 # clean up
-rm(colsub, temp)
+#rm(colsub, temp)
 ```
 
 ## adding annotation rows
@@ -261,4 +261,8 @@ png(file="../plots/genesetsize_hm_indcancers.png", width = 800, height = 600, po
 hm_obj <- Heatmap(as.matrix(tissuecormatch_med_res), name = "Median Correlation", row_title = "Cancer Type", row_labels = substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), row_title_side = "right", column_labels = tissuecormatch_med_res_annorow[23,], top_annotation = column_ha, column_title = "Gene Subset Size", column_title_side = "top", column_names_side = "top", column_dend_side = "bottom", column_split = c(rep("", length(colnames(tissuecormatch_med_res))-1), 63856)) 
 draw(hm_obj)
 dev.off()
+```
+
+```{r}
+sessionInfo()
 ```

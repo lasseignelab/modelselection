@@ -76,7 +76,7 @@ var_source <- c("tcga", "gtex")
 for(i in 1:length(project)){
   project_sub <- names(project)[i]
   tpm_sub <- project[[project_sub]]
-  print(str(tpm_sub))
+  #print(str(tpm_sub))
   
   for(i in subset_num){
     subset_sub <- i
@@ -98,4 +98,8 @@ print(endTime - startTime)
 # clean environment
 ```{r clean environment}
 rm(iqr_gene, tcga_varying_genes, gtex_varying_genes, project, subset_num, var_source, rse_sub, subset_sub, var_sub, project_sub, i, purity_genes)
+```
+
+```{r}
+sessionInfo()
 ```
