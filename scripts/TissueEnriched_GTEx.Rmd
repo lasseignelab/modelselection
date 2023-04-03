@@ -508,7 +508,8 @@ colnames(corbytis_con_allcl_df) <- gtex_tissues_fin
 ## make lil reference table for which cell lines came from what tissue/what their common name is
 ```{r}
 master_sub <- sample_master_meta[sample_master_meta$rse_sampname %in% rownames(corbytis_tum_allcl_df),]
-master_sub <- data.frame(SRA = master_sub$rse_sampname, tissue = master_sub$tissue_coerced, common_name = substr(master_sub$sample_name, 6, nchar(master_sub$sample_name)), lowercase_name = master_sub$cell_line)
+#master_sub <- data.frame(SRA = master_sub$rse_sampname, tissue = master_sub$tissue_coerced, common_name = substr(master_sub$sample_name, 6, nchar(master_sub$sample_name)), lowercase_name = master_sub$cell_line) #sample name not included in updated metadata table
+master_sub <- data.frame(SRA = master_sub$rse_sampname, tissue = master_sub$tissue_coerced, common_name = toupper(str_remove_all(master_sub$cell_line, "_")), lowercase_name = master_sub$cell_line)
 # probably won't show their names necessarily but to reference
 # did double check that cell lines are in same order as cor dfs
 ```
@@ -553,7 +554,7 @@ pheatmap(corbytis_tum_top100cl_df, annotation_row = tum_top100cl_annorow, labels
 pheatmap(corbytis_con_top100cl_df, annotation_row = con_top100cl_annorow, labels_row = con_top100_cl_names, fontsize_row = 6, main = "Top 100 Cell Line Median Correlation to Control Tissue by TAGs")
 ```
 
-### try heatmap with both tum and con tissue
+### heatmap with both tum and con tissue
 ```{r}
 # top 100 cl's with highest median in BOTH
 tum_topcl <- data.frame(medcor = MatrixGenerics::rowMedians(as.matrix(corbytis_tum_allcl_df)), sra = rownames(corbytis_tum_allcl_df))
@@ -593,7 +594,7 @@ saveRDS(corbytis_alltis_100cl_df, "../data/top100_cl_corr.rds")
 png("../plots/top100_cl_heatmap.png", width = 12, height = 5, units = "in", res = 1200)
 set.seed(5)
 ann_colors <- list("Tissue Type" = c('Non-Disease' = "darkblue", Tumor = "orange")) # make tissue type anno color consistent
-ComplexHeatmap::pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors, fontface = "bold")
+pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors, fontface = "bold")
 dev.off()
 ```
 
