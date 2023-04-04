@@ -22,7 +22,7 @@ tissuecormatch_median <- function(filepath, subsize = c(100, 1000, 5000, 10000, 
   for(i in unique(origintissue$samp_origin)[-1]){
     samples <- origintissue[grep(i, origintissue$samp_origin),]$sample
     fullcor_sub <- fullcor[rownames(fullcor) %in% samples,colnames(fullcor) %in% i]
-    if(length(fullcor_sub != 0)){
+    if(length(fullcor_sub) != 0){
       medcor <- c(medcor, median(fullcor_sub))
       tissues <- c(tissues, i)
     }
