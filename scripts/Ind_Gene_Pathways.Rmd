@@ -43,16 +43,16 @@ source("../scripts/functions/cor_eachgene.R")
 ```{r test function}
 dir.create("../data/recount3/indgene")
 cl_tumtis_indgene <- cor_eachgene(cellline_tpm, tumor_tis_tpm)
-saveRDS(cl_tumtis_indgene, "../data/recount3/correscl_tumtis_indgene.rds")
+saveRDS(cl_tumtis_indgene, "../data/recount3/corres/cl_tumtis_indgene.rds")
 
 cl_ndtis_indgene <- cor_eachgene(cellline_tpm, con_tis_tpm)
-saveRDS(cl_ndtis_indgene, "../data/recount3/correscl_ndtis_indgene.rds")
+saveRDS(cl_ndtis_indgene, "../data/recount3/corres/cl_ndtis_indgene.rds")
 
 pdx_tumtis_indgene <- cor_eachgene(pdx_tpm, tumor_tis_tpm)
-saveRDS(pdx_tumtis_indgene, "../data/recount3/correspdx_tumtis_indgene.rds")
+saveRDS(pdx_tumtis_indgene, "../data/recount3/corres/pdx_tumtis_indgene.rds")
 
 pdx_ndtis_indgene <- cor_eachgene(pdx_tpm, con_tis_tpm)
-saveRDS(pdx_ndtis_indgene, "../data/recount3/correspdx_ndtis_indgene.rds")
+saveRDS(pdx_ndtis_indgene, "../data/recount3/corres/pdx_ndtis_indgene.rds")
 # put back into env if they have been removed
 ```
 
