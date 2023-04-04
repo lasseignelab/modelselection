@@ -32,26 +32,27 @@ source("../scripts/functions/cor_eachgene.R")
 
 # small-scale test
 ```{r}
-x <- ccle_tpm[10000:10005,1:5]
-y <- tcga_tpm[10000:10005,1:5]
+#x <- ccle_tpm[10000:10005,1:5]
+#y <- tcga_tpm[10000:10005,1:5]
 
-test <- cor_eachgene(x, y)
-rm(test, x, y)
+#test <- cor_eachgene(x, y)
+#rm(test, x, y)
 ```
 
 # run function
 ```{r test function}
+dir.create("../data/recount3/indgene")
 cl_tumtis_indgene <- cor_eachgene(cellline_tpm, tumor_tis_tpm)
-saveRDS(cl_tumtis_indgene, "../data/rse_subsets/63856/ind_gene/cl_tumtis_indgene.rds")
+saveRDS(cl_tumtis_indgene, "../data/recount3/indgene/cl_tumtis_indgene.rds")
 
 cl_ndtis_indgene <- cor_eachgene(cellline_tpm, con_tis_tpm)
-saveRDS(cl_ndtis_indgene, "../data/rse_subsets/63856/ind_gene/cl_ndtis_indgene.rds")
+saveRDS(cl_ndtis_indgene, "../data/recount3/indgene/cl_ndtis_indgene.rds")
 
 pdx_tumtis_indgene <- cor_eachgene(pdx_tpm, tumor_tis_tpm)
-saveRDS(pdx_tumtis_indgene, "../data/rse_subsets/63856/ind_gene/pdx_tumtis_indgene.rds")
+saveRDS(pdx_tumtis_indgene, "../data/recount3/indgene/pdx_tumtis_indgene.rds")
 
 pdx_ndtis_indgene <- cor_eachgene(pdx_tpm, con_tis_tpm)
-saveRDS(pdx_ndtis_indgene, "../data/rse_subsets/63856/ind_gene/pdx_ndtis_indgene.rds")
+saveRDS(pdx_ndtis_indgene, "../data/recount3/indgene/pdx_ndtis_indgene.rds")
 # put back into env if they have been removed
 ```
 
