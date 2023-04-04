@@ -42,16 +42,16 @@ rm(test, x, y)
 # run function
 ```{r test function}
 cl_tumtis_indgene <- cor_eachgene(cellline_tpm, tumor_tis_tpm)
-saveRDS(cl_tumtis_indgene, "../data/rse_subsets/63856/ind_gene/cl_tumtis_indgene.rds")
+saveRDS(cl_tumtis_indgene, "../data/recount3/correscl_tumtis_indgene.rds")
 
 cl_ndtis_indgene <- cor_eachgene(cellline_tpm, con_tis_tpm)
-saveRDS(cl_ndtis_indgene, "../data/rse_subsets/63856/ind_gene/cl_ndtis_indgene.rds")
+saveRDS(cl_ndtis_indgene, "../data/recount3/correscl_ndtis_indgene.rds")
 
 pdx_tumtis_indgene <- cor_eachgene(pdx_tpm, tumor_tis_tpm)
-saveRDS(pdx_tumtis_indgene, "../data/rse_subsets/63856/ind_gene/pdx_tumtis_indgene.rds")
+saveRDS(pdx_tumtis_indgene, "../data/recount3/correspdx_tumtis_indgene.rds")
 
 pdx_ndtis_indgene <- cor_eachgene(pdx_tpm, con_tis_tpm)
-saveRDS(pdx_ndtis_indgene, "../data/rse_subsets/63856/ind_gene/pdx_ndtis_indgene.rds")
+saveRDS(pdx_ndtis_indgene, "../data/recount3/correspdx_ndtis_indgene.rds")
 # put back into env if they have been removed
 ```
 
@@ -61,6 +61,12 @@ hist(cl_tumtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Betwee
 hist(cl_ndtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between GBM Cell Lines and Brain Non-Disease Tissue", xlab = "Spearman's Rho")
 hist(pdx_tumtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between GBM PDXs and Brain Tumor Tissue", xlab = "Spearman's Rho")
 hist(pdx_ndtis_indgene$rho, breaks = 50, main = "Histogram of Correlation Between GBM PDXs and Brain Non-Disease Tissue", xlab = "Spearman's Rho")
+
+#print stats example
+print(paste("Neg Rho, Sig P =", length(rownames(subset(cl_tumtis_indgene, rho < 0) %>% subset(p.value < 0.05)))))
+print(paste("Neg Rho, Not Sig P =", length(rownames(subset(cl_tumtis_indgene, rho < 0) %>% subset(p.value >= 0.05)))))
+print(paste("Pos Rho, Sig P =", length(rownames(subset(cl_tumtis_indgene, rho > 0) %>% subset(p.value < 0.05)))))
+print(paste("Pos Rho, Not Sig P =", length(rownames(subset(cl_tumtis_indgene, rho > 0) %>% subset(p.value >= 0.05)))))
 ```
 
 # p val stats
@@ -123,6 +129,7 @@ for(i in names(cl_pdx_indgene_sigvenn)){
 ```{r}
 library(gprofiler2)
 for(i in names(cl_pdx_indgene_sigvenn)){
+  set.seed(10)
   test <- cl_pdx_indgene_sigvenn[[i]]
   cl_pdx_indgene_sigvenn[[i]] <- NULL
   cl_pdx_indgene_sigvenn[[i]][["ens"]] <- test
@@ -265,7 +272,7 @@ for(i in names(indgene_cor_pathway_res)){
     sig <- i
     for(i in c("pos", "neg")){
       cor <- i
-      
+      set.seed(10)
       # save the gene list
       genes <- indgene_cor_pathway_res[[name]][[sig]][[cor]]
       # clear object
