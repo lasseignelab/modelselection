@@ -90,7 +90,7 @@ CCLE and PDX
 ccle_rse_adj <- ccle_rse %>% 
   mutate(., source ="CCLE", origin = "Cell Line", rse_samp_name = rownames(ccle_rse), tissue = str_to_title(gsub("_", " ", `sra_attribute.tissue`)), 
          cell_line = barebones_cellline(sra_attribute.cell_line), disease = str_to_title(gsub("_", " ", `sra_attribute.disease`)), sequencer = "Illumina HiSeq", 
-         sex = ifelse(sra_attribute.sex == "NA", "Not Reported", str_to_title(sra_attribute.sex)), race = ifelse(sra_attribute.ethnicity == "NA", "Not Reported", `sra_attribute.ethnicity`), readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
+         sex = ifelse(sra_attribute.sex == "NA", "Not Reported", str_to_title(sra_attribute.sex)), race = ifelse(sra_attribute.ethnicity == "NA", "Not Reported", ifelse(sra_attribute.ethnicity == "African_american", "Black Or African American", `sra_attribute.ethnicity`)), readlength = `recount_qc.star.average_input_read_length`, .keep = "used") %>% 
   #replace_na(list(sex = "Not Reported", race = "Not Reported")) %>%
   dplyr::select(source, origin, rse_samp_name, tissue, cell_line, disease, sequencer, sex, race, readlength)
 

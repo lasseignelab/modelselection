@@ -90,3 +90,20 @@ tisgenesetcor <- function(x,y,method = "spearman", tissue, onlymatch = TRUE, med
   # return obj
   return(cor)
 }
+
+# read.gmt() function from qusage package
+##Author: Minghui Wang
+read.gmt=function(filename){
+  if(! file.exists(filename)) stop('File ',filename,' not available\n')
+  dat=readLines(filename)
+  n=length(dat)
+  res=list(genesets=vector(mode = "list", length = n),geneset.names=vector(mode = "character", length = n),geneset.descriptions=vector(mode = "character", length = n))
+  for(i in 1:n){
+    s=strsplit(dat[i],'\t')[[1]]
+    res$genesets[[i]]=s[-c(1:2)]
+    res$geneset.names[i]=s[1]
+    res$geneset.descriptions[i]=s[2]
+  }
+  names(res$genesets)=res$geneset.names
+  res
+}

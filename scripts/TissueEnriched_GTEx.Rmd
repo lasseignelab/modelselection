@@ -18,9 +18,7 @@ library(pheatmap)
 source("../scripts/functions/tisgenesetcor.R")
 # geom_split_violin fun
 source("../scripts/functions/geom_split_violin.R")
-
 ```
-
 
 # requires qusage package for reading in GMTs
 ```{r read in up and down genes for each tissue}
@@ -31,22 +29,22 @@ sample_master_meta <- readRDS("../data/sample_master_meta.rds")
 
 # I need ens IDs for these genes
 ```{r adding ens IDs}
-for(i in names(gtex_up_tissue_genes)){
-  out <- data.frame(genesym = gtex_up_tissue_genes[[paste(i)]])
+for(i in names(gtex_up_tissue_genes$genesets)){
+  out <- data.frame(genesym = gtex_up_tissue_genes$genesets[[paste(i)]])
   out$ens <- mapIds(org.Hs.eg.db, keys = out$genesym, column = "ENSEMBL", keytype = "SYMBOL", multiVals = "first")
- gtex_up_tissue_genes[[paste(i)]] <- na.omit(out$ens) 
+ gtex_up_tissue_genes$genesets[[paste(i)]] <- na.omit(out$ens) 
 }
 
-for(i in names(gtex_down_tissue_genes)){
-  out <- data.frame(genesym = gtex_down_tissue_genes[[paste(i)]])
+for(i in names(gtex_down_tissue_genes$genesets)){
+  out <- data.frame(genesym = gtex_down_tissue_genes$genesets[[paste(i)]])
   out$ens <- mapIds(org.Hs.eg.db, keys = out$genesym, column = "ENSEMBL", keytype = "SYMBOL", multiVals = "first")
- gtex_down_tissue_genes[[paste(i)]] <- na.omit(out$ens) 
+ gtex_down_tissue_genes$genesets[[paste(i)]] <- na.omit(out$ens) 
 }
 
 # also would like to have one list with both up and down
 gtex_both_tissue_genes <- list()
-for(i in names(gtex_up_tissue_genes)){ # up and down have the same name set
-  gtex_both_tissue_genes[[paste(i)]] <- c(gtex_up_tissue_genes[[paste(i)]], gtex_down_tissue_genes[[paste(i)]])
+for(i in names(gtex_up_tissue_genes$genesets)){ # up and down have the same name set
+  gtex_both_tissue_genes[[paste(i)]] <- c(gtex_up_tissue_genes$genesets[[paste(i)]], gtex_down_tissue_genes$genesets[[paste(i)]])
 }
 
 # clear env
@@ -594,7 +592,7 @@ saveRDS(corbytis_alltis_100cl_df, "../data/top100_cl_corr.rds")
 png("../plots/top100_cl_heatmap.png", width = 12, height = 5, units = "in", res = 1200)
 set.seed(5)
 ann_colors <- list("Tissue Type" = c('Non-Disease' = "darkblue", Tumor = "orange")) # make tissue type anno color consistent
-pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors, fontface = "bold")
+pheatmap(t(corbytis_alltis_100cl_df), annotation_col = alltis_annorow, labels_col = alltis_top100cl_names, fontsize_col = 6, annotation_row = alltis_annocol, annotation_colors = ann_colors, face = "bold")
 dev.off()
 ```
 
