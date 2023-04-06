@@ -465,8 +465,39 @@ for(i in unique(cor_dismatch_contis_long$tissue)){
     rstatix::wilcox_test(cor ~ Model) %>% add_significance()
 }
 
+# add Bonferonni test
+
+for(i in c("can", "con")){
+    type <- i
+    for(i in names(cor_wilcox_matches_alltissues[[paste(type)]])){
+        cor_wilcox_matches_alltissues[[type]][[i]][["bon_p"]] <- p.adjust(cor_wilcox_matches_alltissues[[type]][[i]][["p"]], n = length(names(cor_wilcox_matches_alltissues[[type]])), method = "bonferroni")
+        cor_wilcox_matches_alltissues[[type]][[i]][["bon_p.signif"]] <- NA
+        if(cor_wilcox_matches_alltissues[[type]][[i]][["bon_p"]] < 0.05){
+            cor_wilcox_matches_alltissues[[type]][[i]][["bon_p.signif"]] <- "SIG"
+        }else{
+            cor_wilcox_matches_alltissues[[type]][[i]][["bon_p.signif"]] <- "INSIG"
+        }
+    }
+}
+
 saveRDS(cor_dismatch_stattest_alltis, "../data/cor_wilcox_matches_alltissues.rds")
-# basically, they're all significant
+
+# how many tissues were significant?
+sig_can <- c()
+for(i in names(cor_wilcox_matches_alltissues[["can"]])){
+    if(cor_wilcox_matches_alltissues[["can"]][[i]][["bon_p.signif"]] == "SIG"){
+          sig_can <- c(sig_can, i)
+    }
+}
+print(paste(length(sig_can), "/", length(names(cor_wilcox_matches_alltissues[["can"]]))))
+
+sig_con <- c()
+for(i in names(cor_wilcox_matches_alltissues[["con"]])){
+    if(cor_wilcox_matches_alltissues[["con"]][[i]][["bon_p.signif"]] == "SIG"){
+          sig_con <- c(sig_con, i)
+    }
+}
+print(paste(length(sig_con), "/", length(names(cor_wilcox_matches_alltissues[["con"]]))))
 ```
 
 ```{r}
