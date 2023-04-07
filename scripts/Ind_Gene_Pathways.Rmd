@@ -1,5 +1,15 @@
 > goal: look at how individual genes correlate for cell lines against tissues in brain
 
+# library
+```{r}
+library(AnnotationDbi)
+library(org.Hs.eg.db)
+library(gprofiler2)
+library(ggplot2)
+library(viridis)
+library(ggpubr)
+```
+
 # first, read in TPM and metadata
 ```{r}
 ccle_tpm <- readRDS("../data/recount3/tpm/ccle_tpm.rds")
@@ -41,7 +51,6 @@ source("../scripts/functions/cor_eachgene.R")
 
 # run function
 ```{r test function}
-dir.create("../data/recount3/indgene")
 cl_tumtis_indgene <- cor_eachgene(cellline_tpm, tumor_tis_tpm)
 saveRDS(cl_tumtis_indgene, "../data/recount3/corres/cl_tumtis_indgene.rds")
 
@@ -78,9 +87,9 @@ print(c(length(na.omit(cl_tumtis_indgene[cl_tumtis_indgene$p.value < 0.05,]$p.va
 ```
 
 _Genes that pass p-val filtering (<0.05):_
-* CL vs Tum Tissue: 1909
+* CL vs Tum Tissue: 2005
 * CL vs Con Tissue: 2151
-* PDX vs Tum Tissue: 2402
+* PDX vs Tum Tissue: 2319
 * PDX vs Con Tissue: 1973
 
 # which of the significant genes are specific to CLs vs PDX?
@@ -100,9 +109,9 @@ for(i in names(cl_pdx_indgene_sigvenn)){
 
 _Genes that are exclusively significant to one group or common in both_
 When correlated with tumor tissue:
-  * exclusive to cell lines: 1821
-* exclusive to pdx: 2314
-* in both: 88
+  * exclusive to cell lines: 1894
+* exclusive to pdx: 2208
+* in both: 11
 
 With control tissue:
   * exclusive to cell lines: 2064
@@ -111,9 +120,6 @@ With control tissue:
 
 # pathway analysis
 ```{r}
-library(AnnotationDbi)
-library(org.Hs.eg.db)
-
 for(i in names(cl_pdx_indgene_sigvenn)){
   temp <- cl_pdx_indgene_sigvenn[[i]]
   cl_pdx_indgene_sigvenn[[i]] <- NULL
@@ -128,7 +134,6 @@ for(i in names(cl_pdx_indgene_sigvenn)){
 
 ## gprofiler2 for pathway visualization
 ```{r}
-library(gprofiler2)
 for(i in names(cl_pdx_indgene_sigvenn)){
   set.seed(10)
   test <- cl_pdx_indgene_sigvenn[[i]]
@@ -416,10 +421,6 @@ publish_gosttable(indgene_cor_pathway_res[["pdx_ndtis"]][["sig"]][["neg"]][["gos
 
 # jen's enrichment plots
 ## add -log10 of p values to gost res
-```{r packages}
-library(ggplot2)
-library(viridis)
-```
 
 ```{r}
 for(i in names(indgene_cor_pathway_res)){
@@ -456,8 +457,6 @@ for(i in names(indgene_cor_pathway_res)){
 
 ## geom point with fold enrichment
 ```{r}
-library(ggpubr)
-
 for(i in names(indgene_cor_pathway_res)){
   name <- i
   for(i in c("sig", "insig")){
