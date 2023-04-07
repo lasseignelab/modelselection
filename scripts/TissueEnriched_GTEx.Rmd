@@ -160,12 +160,12 @@ tis_gene_cor_con_vio_in <- tis_gene_cor_con_vio_in[tis_gene_cor_con_vio_in$tissu
 ## next, generate plots
 ```{r generate violin plot}
 ggplot(tis_gene_cor_tum_vio_in, aes(x=tissue, y=corres, color=tissue)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Tumor Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Tumor Tissue") + ylim(0.4,0.9)
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Tumor Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Tumor Tissue") + ylim(0.4,0.9) + geom_signif(comparisons = list(c("Cell Line", "PDX")), test = "wilcox.test", map_signif_level = TRUE)
 ggsave(filename = "../plots/tags_violin/allcltomatchtum.png", 
           width = 13, height = 7, units = "in")
 
 ggplot(tis_gene_cor_con_vio_in, aes(x=tissue, y=corres, color=tissue)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Non-Disease Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Control Tissue") + ylim(0.4,0.9)
+  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Matched Non-Disease Tissue", y = "Median Correlation of Each Cell Line Sample to Matched Control Tissue") + ylim(0.4,0.9) + geom_signif(comparisons = list(c("Cell Line", "PDX")), test = "wilcox.test", map_signif_level = TRUE)
 ggsave(filename = "../plots/tags_violin/allcltomatchcon.png", 
           width = 13, height = 7, units = "in")
 ```
@@ -205,12 +205,28 @@ for(i in names(tis_gene_cor_stat)){
 }
 
 # view in dataframe form
-temp <- data.frame(tissue = names(tis_gene_cor_stat), effect = NA)
-for(i in temp$tissue){
-  temp[grep(i, temp$tissue),]$effect <- tis_gene_cor_stat[[i]][["effect"]][["p"]]
+tis_gene_cor_stat_df <- data.frame(tissue = names(tis_gene_cor_stat), effect = NA)
+for(i in tis_gene_cor_stat_df$tissue){
+  tis_gene_cor_stat_df[grep(i, tis_gene_cor_stat_df$tissue),]$effect <- tis_gene_cor_stat[[i]][["effect"]][["p"]]
 }
-View(temp)
-rm(temp)
+
+# add Bonferonni test
+
+tis_gene_cor_stat_df$bon_p <- p.adjust(tis_gene_cor_stat_df$effect, n = length(tis_gene_cor_stat_df$tissue), method = "bonferroni")
+tis_gene_cor_stat_df$bon_p.signif <- NA
+tis_gene_cor_stat_df[tis_gene_cor_stat_df$bon_p < 0.05,]$bon_p.signif <- "SIG"
+tis_gene_cor_stat_df[tis_gene_cor_stat_df$bon_p >= 0.05,]$bon_p.signif <- "INSIG"
+
+saveRDS(tis_gene_cor_stat_df, "../data/tis_gene_cor_stat_df.rds")
+
+# how many tissues were significant?
+sig_tis <- c()
+for(i in tis_gene_cor_stat_df$tissue){
+    if(tis_gene_cor_stat_df[grep(i, tis_gene_cor_stat_df$tissue),]$bon_p.signif == "SIG"){
+          sig_tis <- c(sig_tis, i)
+    }
+}
+print(paste(length(sig_tis), "/", length(tis_gene_cor_stat_df$tissue)))
 ```
 
 ## next, let's make a plot for each tissue
@@ -345,7 +361,7 @@ tis_gene_cor_pdxcl_con_vio_in$type[tis_gene_cor_pdxcl_con_vio_in$type == "CL"] <
 
 #### next, generate plots
 ```{r generate violin plot}
-ggplot(tis_gene_cor_pdxcl_tum_vio_in, aes(x=type, y=corres, color=type)) + geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue in Brain-Specific Genes") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15))
+ggplot(tis_gene_cor_pdxcl_tum_vio_in, aes(x=type, y=corres)) + geom_violin(aes(color=type)) + geom_jitter(shape=16, position=position_jitter(0.2), aes(color=type)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue in Brain-Specific Genes") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15)) + geom_signif(comparisons = list(c("Cell Line", "PDX")), test = "wilcox.test", map_signif_level = TRUE)
 ggsave(filename = "../plots/tags_violin/brainclpdxtomatchtum.png", 
           width = 6, height = 7)
 
@@ -353,7 +369,7 @@ print("PDX median correlation to tumor tissue rho is")
 median(tis_gene_cor_pdxcl_tum_vio_in[tis_gene_cor_pdxcl_tum_vio_in$type == "PDX",]$corres) - median(tis_gene_cor_pdxcl_tum_vio_in[tis_gene_cor_pdxcl_tum_vio_in$type == "Cell Line",]$corres)
 print("greater than Cell Line median")
 
-ggplot(tis_gene_cor_pdxcl_con_vio_in, aes(x=type, y=corres, color=type)) + geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Non-Disease Tissue in Brain-Specific Genes") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15))
+ggplot(tis_gene_cor_pdxcl_con_vio_in, aes(x=type, y=corres)) + geom_violin(aes(color=type)) + geom_jitter(shape=16, position=position_jitter(0.2), aes(color=type)) + labs(x = "Model Type", y = "Median Correlation of Model to Brain Non-Disease Tissue in Brain-Specific Genes") + ylim(0.5,0.9) + guides(color = "none") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 15)) + geom_signif(comparisons = list(c("Cell Line", "PDX")), test = "wilcox.test", map_signif_level = TRUE)
 ggsave(filename = "../plots/tags_violin/brainclpdxtomatchcon.png", 
           width = 6, height = 7)
 
@@ -483,6 +499,56 @@ range(tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_cor_pdxcl_alltum_vio_in$type == 
 ggplot(tis_gene_cor_pdxcl_allcon_vio_in, aes(tissue, cor, fill = type)) + geom_split_violin() + labs(x = "Non-Disease Tissue Type", y = "Median Correlation of GBM Models to Tissues in Each Tissue's Specific Genes") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + scale_fill_discrete(name = "Model") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
 ggsave(filename = "../plots/tags_violin/brainclpdxtoallcon.png", 
           width = 5000, height = 2300, units = "px")
+```
+
+# Wilcoxon test and Bonferonni
+```{r}
+# Question : Is there any significant difference between pdx and cell line median correlation to EACH tissue?
+cor_dismatch_te_stattest_alltis <- list()
+# they have different tissues so I'll do sep loops
+for(i in unique(tis_gene_cor_pdxcl_alltum_vio_in$tissue)){
+  cor_dismatch_te_stattest_alltis[["can"]][[paste(i)]] <- tis_gene_cor_pdxcl_alltum_vio_in[tis_gene_cor_pdxcl_alltum_vio_in$tissue == i,] %>%
+    rstatix::wilcox_test(cor ~ type) %>% add_significance()
+}
+
+for(i in unique(tis_gene_cor_pdxcl_allcon_vio_in$tissue)){
+  cor_dismatch_te_stattest_alltis[["con"]][[paste(i)]] <- tis_gene_cor_pdxcl_allcon_vio_in[tis_gene_cor_pdxcl_allcon_vio_in$tissue == i,] %>%
+    rstatix::wilcox_test(cor ~ type) %>% add_significance()
+}
+
+# add Bonferonni test
+
+for(i in c("can", "con")){
+    type <- i
+    for(i in names(cor_dismatch_te_stattest_alltis[[paste(type)]])){
+        cor_dismatch_te_stattest_alltis[[type]][[i]][["bon_p"]] <- p.adjust(cor_dismatch_te_stattest_alltis[[type]][[i]][["p"]], n = length(names(cor_dismatch_te_stattest_alltis[[type]])), method = "bonferroni")
+        cor_dismatch_te_stattest_alltis[[type]][[i]][["bon_p.signif"]] <- NA
+        if(cor_dismatch_te_stattest_alltis[[type]][[i]][["bon_p"]] < 0.05){
+            cor_dismatch_te_stattest_alltis[[type]][[i]][["bon_p.signif"]] <- "SIG"
+        }else{
+            cor_dismatch_te_stattest_alltis[[type]][[i]][["bon_p.signif"]] <- "INSIG"
+        }
+    }
+}
+
+saveRDS(cor_dismatch_te_stattest_alltis, "../data/cor_dismatch_te_stattest_alltis.rds")
+
+# how many tissues were significant?
+sig_can <- c()
+for(i in names(cor_dismatch_te_stattest_alltis[["can"]])){
+    if(cor_dismatch_te_stattest_alltis[["can"]][[i]][["bon_p.signif"]] == "SIG"){
+          sig_can <- c(sig_can, i)
+    }
+}
+print(paste(length(sig_can), "/", length(names(cor_dismatch_te_stattest_alltis[["can"]]))))
+
+sig_con <- c()
+for(i in names(cor_dismatch_te_stattest_alltis[["con"]])){
+    if(cor_dismatch_te_stattest_alltis[["con"]][[i]][["bon_p.signif"]] == "SIG"){
+          sig_con <- c(sig_con, i)
+    }
+}
+print(paste(length(sig_con), "/", length(names(cor_dismatch_te_stattest_alltis[["con"]]))))
 ```
 
 # make heatmap to summarize all cls compared to each tissue/TAG

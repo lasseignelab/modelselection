@@ -92,13 +92,13 @@ keep <- filterByExpr(brain_tpm, min.count = 1, min.total.count = 1)
 brain_tpm_filt <- brain_tpm[keep,] # only about 5K genes unless I default parameter stringency, this now leaves 17K
 
 # now format for prcomp to compute PC's
-brain_tpm_meta <- data.frame(t(brain_tpm_filt))
-brain_tpm_meta$origin <- sample_brain_meta[,2]
-brain_pcares <- prcomp(t(brain_tpm_filt))
+#brain_tpm_meta <- data.frame(t(brain_tpm_filt))
+#brain_tpm_meta$origin <- sample_brain_meta[,2]
+#brain_pcares <- prcomp(t(brain_tpm_filt))
 
 # start with autoplot to find PCs with significant separation
-autoplot(brain_pcares, data = brain_tpm_meta, colour = "origin")
-autoplot(brain_pcares, data = brain_tpm_meta, colour = "origin", x = 2, y = 3)
+#autoplot(brain_pcares, data = brain_tpm_meta, colour = "origin")
+#autoplot(brain_pcares, data = brain_tpm_meta, colour = "origin", x = 2, y = 3)
 
 # additionally plot each cell line type
 ## using autoplot because too many options for density rug plot
@@ -108,19 +108,19 @@ autoplot(brain_pcares, data = brain_tpm_meta, colour = "origin", x = 2, y = 3)
 #sample_brain_meta[!is.na(sample_brain_meta$cell_line) & sample_brain_meta$cell_line=="shsy5y_",]$cell_line <- "shsy5y" #removed when filtering for GBM-derived CL's
 
 # need to make and re-filt tpm matrix for just cell lines
-gbm_cl_tpm <- brain_tpm_filt[,colnames(brain_tpm_filt) %in% cell_line_gbm_samples]
+#gbm_cl_tpm <- brain_tpm_filt[,colnames(brain_tpm_filt) %in% cell_line_gbm_samples]
 
-keep <- filterByExpr(gbm_cl_tpm, min.count = 1, min.total.count = 1)
-gbm_cl_tpm_filt <- gbm_cl_tpm[keep,]
+#keep <- filterByExpr(gbm_cl_tpm, min.count = 1, min.total.count = 1)
+#gbm_cl_tpm_filt <- gbm_cl_tpm[keep,]
 
-gbm_cl_pcares <- prcomp(t(gbm_cl_tpm_filt))
+#gbm_cl_pcares <- prcomp(t(gbm_cl_tpm_filt))
 
 # adding cell line info
-gbm_cl_pca_meta <- data.frame(t(gbm_cl_tpm_filt))
-gbm_cl_pca_meta$cl <- sample_brain_meta[sample_brain_meta$rse_sampname %in% cell_line_gbm_samples,]$cell_line
+#gbm_cl_pca_meta <- data.frame(t(gbm_cl_tpm_filt))
+#gbm_cl_pca_meta$cl <- sample_brain_meta[sample_brain_meta$rse_sampname %in% cell_line_gbm_samples,]$cell_line
 
 # make pca visual
-autoplot(gbm_cl_pcares, data = gbm_cl_pca_meta, colour = "cl")
+#autoplot(gbm_cl_pcares, data = gbm_cl_pca_meta, colour = "cl")
 ```
 
 # now the fancy PCAs
@@ -288,19 +288,19 @@ rownames(cl_pdx_violin) <- clsub_pdx_samples
 
 
 # Basic violin plot
-ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model to Brain Non-Disease Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 15))
+ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor)) + 
+  geom_violin(aes(color = type)) + geom_jitter(shape=16, position=position_jitter(0.2), aes(color = type)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model to Brain Non-Disease Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 15)) + geom_signif(comparisons = list(c("Cell Line", "PDX")), test = "wilcox.test", map_signif_level = TRUE)
 ggsave(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_con.png", width = 5, height = 6)
 
-con_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model Sample to Brain Non-Disease Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
+#con_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=con_med_cor, color = type)) + 
+#  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median #Correlation of Model Sample to Brain Non-Disease Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
 
-ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 15))
+ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor)) + 
+  geom_violin(aes(color = type)) + geom_jitter(shape=16, position=position_jitter(0.2), aes(color = type)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model to Brain Tumor Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 15)) + geom_signif(comparisons = list(c("Cell Line", "PDX")), test = "wilcox.test", map_signif_level = TRUE)
 ggsave(filename = "../plots/tags_violin/fullgenesvio_brainclvspdx_tum.png", width = 5, height = 6)
 
-tum_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
-  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median Correlation of Model Sample to Brain Tumor Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
+#tum_violin_alt <- ggplot(cl_pdx_violin, aes(x=type, y=tum_med_cor, color = type)) + 
+#  geom_violin() + geom_jitter(shape=16, position=position_jitter(0.2)) + guides(color = "none") + labs(x = "Model Type", y = "Median #Correlation of Model Sample to Brain Tumor Tissue") + ylim(0.5,0.9) + guides(color = "none") # alt with scale difference for fig 3
 ```
 
 # Wilcoxon rank sum test on these two groups
@@ -317,6 +317,7 @@ cl_pdx_violin %>% wilcox_effsize(tum_med_cor ~ type)
 
 # report
 stat.test <- stat.test %>% add_xy_position(x = "group")
+
 
 #tum_violin + 
 #  stat_pvalue_manual(stat.test, tip.length = 0) +
@@ -438,19 +439,18 @@ source("../scripts/functions/geom_split_violin.R")
 ```
 
 ```{r plot}
-ggplot(cor_dismatch_cantis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Tumor Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
+ggplot(cor_dismatch_cantis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Tumor Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15)) + ylim(0.7, 0.9) # to add significance later
 ggsave(filename = "../plots/vio_braincltoeachtum.png", 
           width = 18, height = 7)
 
 range(cor_dismatch_cantis_long_cl$cor)
 range(cor_dismatch_cantis_long_pdx$cor)
 
-ggplot(cor_dismatch_contis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Non-Disease Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Non-Disease Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15))
+ggplot(cor_dismatch_contis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Non-Disease Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Non-Disease Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15)) + ylim(0.7, 0.9) # to add significance later
 ggsave(filename = "../plots/vio_braincltoeachcon.png", 
           width = 18, height = 7)
 ```
 
-# Wilcoxon rank sum test between models for each tissue
 ```{r}
 # Question : Is there any significant difference between pdx and cell line median correlation to EACH tissue?
 cor_dismatch_stattest_alltis <- list()
@@ -469,35 +469,35 @@ for(i in unique(cor_dismatch_contis_long$tissue)){
 
 for(i in c("can", "con")){
     type <- i
-    for(i in names(cor_wilcox_matches_alltissues[[paste(type)]])){
-        cor_wilcox_matches_alltissues[[type]][[i]][["bon_p"]] <- p.adjust(cor_wilcox_matches_alltissues[[type]][[i]][["p"]], n = length(names(cor_wilcox_matches_alltissues[[type]])), method = "bonferroni")
-        cor_wilcox_matches_alltissues[[type]][[i]][["bon_p.signif"]] <- NA
-        if(cor_wilcox_matches_alltissues[[type]][[i]][["bon_p"]] < 0.05){
-            cor_wilcox_matches_alltissues[[type]][[i]][["bon_p.signif"]] <- "SIG"
+    for(i in names(cor_dismatch_stattest_alltis[[paste(type)]])){
+        cor_dismatch_stattest_alltis[[type]][[i]][["bon_p"]] <- p.adjust(cor_dismatch_stattest_alltis[[type]][[i]][["p"]], n = length(names(cor_dismatch_stattest_alltis[[type]])), method = "bonferroni")
+        cor_dismatch_stattest_alltis[[type]][[i]][["bon_p.signif"]] <- NA
+        if(cor_dismatch_stattest_alltis[[type]][[i]][["bon_p"]] < 0.05){
+            cor_dismatch_stattest_alltis[[type]][[i]][["bon_p.signif"]] <- "SIG"
         }else{
-            cor_wilcox_matches_alltissues[[type]][[i]][["bon_p.signif"]] <- "INSIG"
+            cor_dismatch_stattest_alltis[[type]][[i]][["bon_p.signif"]] <- "INSIG"
         }
     }
 }
 
-saveRDS(cor_dismatch_stattest_alltis, "../data/cor_wilcox_matches_alltissues.rds")
+saveRDS(cor_dismatch_stattest_alltis, "../data/cor_dismatch_stattest_alltis.rds")
 
 # how many tissues were significant?
 sig_can <- c()
-for(i in names(cor_wilcox_matches_alltissues[["can"]])){
-    if(cor_wilcox_matches_alltissues[["can"]][[i]][["bon_p.signif"]] == "SIG"){
+for(i in names(cor_dismatch_stattest_alltis[["can"]])){
+    if(cor_dismatch_stattest_alltis[["can"]][[i]][["bon_p.signif"]] == "SIG"){
           sig_can <- c(sig_can, i)
     }
 }
-print(paste(length(sig_can), "/", length(names(cor_wilcox_matches_alltissues[["can"]]))))
+print(paste(length(sig_can), "/", length(names(cor_dismatch_stattest_alltis[["can"]]))))
 
 sig_con <- c()
-for(i in names(cor_wilcox_matches_alltissues[["con"]])){
-    if(cor_wilcox_matches_alltissues[["con"]][[i]][["bon_p.signif"]] == "SIG"){
+for(i in names(cor_dismatch_stattest_alltis[["con"]])){
+    if(cor_dismatch_stattest_alltis[["con"]][[i]][["bon_p.signif"]] == "SIG"){
           sig_con <- c(sig_con, i)
     }
 }
-print(paste(length(sig_con), "/", length(names(cor_wilcox_matches_alltissues[["con"]]))))
+print(paste(length(sig_con), "/", length(names(cor_dismatch_stattest_alltis[["con"]]))))
 ```
 
 ```{r}
