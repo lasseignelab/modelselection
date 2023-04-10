@@ -30,7 +30,7 @@ The docker image used to run these analyses (rstudio_modelselection:1.2.1) is av
 8. _Ind_Gene_Pathways.Rmd script with cor_eachgene.R function script_ - Evaluating model performance within individual genes and what pathways these genes belong to
 
 ## Lasseigne Lab 
-<img src="https://www.lasseigne.org/img/main/lablogo.png" width="200" height="200">
+<a href="https://www.lasseigne.org/" target="_blank"><img src="https://www.lasseigne.org/img/main/lablogo.png" width="200" height="200"></a>
 
 ## License
 [MIT](https://github.com/lasseignelab/modelselection/blob/main/LICENSE)
