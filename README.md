@@ -32,6 +32,12 @@ The docker image used to run these analyses (rstudio_modelselection:1.2.1) is av
 ## Lasseigne Lab 
 <a href="https://www.lasseigne.org/" target="_blank"><img src="https://www.lasseigne.org/img/main/lablogo.png" width="200" height="200"></a>
 
+# Zenodo
+**CODE:**
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7813872.svg)](https://doi.org/10.5281/zenodo.7813872)
+**DOCKER:**
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7813907.svg)](https://doi.org/10.5281/zenodo.7813907)
+
 ## License
 [MIT](https://github.com/lasseignelab/modelselection/blob/main/LICENSE)
 
