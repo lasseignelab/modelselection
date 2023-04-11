@@ -141,24 +141,6 @@ sample_master_meta <- rownames_to_column(sample_master_meta, var = "rse_sampname
 saveRDS(sample_master_meta, "../data/sample_master_meta.rds")
 ```
 
-#compare results (remove chunk after code review)
-```{r}
-averys_meta <- readRDS("../data/OLD_sample_master_meta.rds")
-##compare
-BiocManager::install("arsenal") #not in docker image , just for checking results
-library(arsenal) 
-averys_meta$tissue_groups <- NULL #removed, not used
-sample_master_meta$tissue_groups <- NULL 
-
-
-meta_differences <- comparedf(sample_master_meta, averys_meta, by = "rse_sampname") 
-summary(meta_differences)
-View(meta_differences)
-View(meta_differences[["vars.summary"]][["values"]][[12]]) #check differences by columns
-#tolerable differences in 3, 4, 5, 6, 8, 9, 11, 12:
-#after updates to metadata, found differences compared to the original in 'control' -> 'nondisease' rewording, differences in tissue (but not carried over to tissue_coerced, which is the only thing used), differences in cell line upper/lower case, differences in tissue upper/lower case
-```
-
 ```{r}
 sessionInfo()
 ```
