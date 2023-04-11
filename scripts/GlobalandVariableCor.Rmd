@@ -1,5 +1,4 @@
-# using fullcor object to build polished figures for bucket 1
-> bucket 1: Just GBM, global correlations, and most variable gene correlations across cell lines/patients and healthy tissue/PDX
+# using fullcor object to analyze global gene and variable gene correlations
 
 # prerequisite files:
 * sample_master_meta: generated from MetaTable RMD script using the RSE objects for each sample group, which themselves are generated from the DataDownload RMD script.
