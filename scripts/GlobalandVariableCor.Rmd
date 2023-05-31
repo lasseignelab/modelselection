@@ -123,9 +123,79 @@ brain_tpm_filt <- brain_tpm[keep,] # only about 5K genes unless I default parame
 ```
 
 # now the fancy PCAs
+## adjust Scatter_Density fun
+```{r}
+Scatter_Density_adj <- function (object, batch = NULL, trt = NULL, xlim = NULL, ylim = NULL, 
+  color.set = NULL, batch.legend.title = "Batch", trt.legend.title = "Treatment", 
+  density.lwd = 0.2, title = NULL, title.cex = 1.5, legend.cex = 0.7, 
+  legend.title.cex = 0.75, y.axis.cex = 0.8, x.axis.cex = 0.8, point.size = 1.5, axis.text.cex = 0.6) 
+{
+  data = as.data.frame(object[["variates"]][["X"]])
+  expl.var = object[["prop_expl_var"]][["X"]]
+  if (is.null(batch)) {
+    batch <- batch
+  }
+  else {
+    batch <- as.factor(batch)
+  }
+  if (is.null(trt)) {
+    trt <- trt
+  }
+  else {
+    trt <- as.factor(trt)
+  }
+  if (is.null(color.set)) {
+    color.set = color.mixo(seq_len(10))
+  }
+  else {
+    color.set = color.set
+  }
+  pMain <- ggplot(data = data, aes(x = data[, 1], y = data[, 
+    2], colour = batch, shape = trt)) + geom_point(size = point.size) + xlab(paste0("PC1: ", 
+    round(as.numeric(expl.var[1]) * 100), "% expl.var")) + 
+    ylab(paste0("PC2: ", round(as.numeric(expl.var[2]) * 
+      100), "% expl.var")) + scale_shape_manual(values = c(1, 
+    19, 2, 17, 4)) + scale_color_manual(values = color.set) + 
+    theme_bw() + labs(colour = batch.legend.title, shape = trt.legend.title) + 
+    scale_x_continuous(limits = xlim) + scale_y_continuous(limits = ylim) + 
+    theme(legend.position = "right", legend.box = "horizontal", 
+      legend.direction = "vertical", legend.key.height = unit(0.2, 
+        "cm"), legend.key.width = unit(0.1, "cm"), legend.title = element_text(size = rel(legend.title.cex), face = "bold"), 
+      legend.spacing.x = unit(0.1, "cm"), legend.spacing.y = unit(0.1, 
+        "cm"), legend.text = element_text(size = rel(legend.cex), face = "bold"), axis.title.y = element_text(size = rel(y.axis.cex), face = "bold"), axis.title.x = element_text(size = rel(x.axis.cex), face = "bold"), axis.text = element_text(size = rel(axis.text.cex)))
+  xlim.update <- layer_scales(pMain)$x$get_limits()
+  ylim.update <- layer_scales(pMain)$y$get_limits()
+  pTop <- ggplot(data = data, aes(x = data[, 1], fill = batch, 
+    linetype = trt)) + geom_density(size = density.lwd, 
+    alpha = 0.5) + ylab("Density") + theme(axis.title.x = element_blank(), 
+    axis.title.y = element_text(size = rel(y.axis.cex), face = "bold"), plot.title = element_text(hjust = 0.5, size = rel(title.cex), face = "bold"), axis.line = element_blank(), 
+    axis.text = element_blank(), axis.ticks = element_blank(), 
+    panel.background = element_blank(), legend.position = "none") + 
+    scale_fill_manual(values = color.set) + scale_x_continuous(limits = xlim.update) + 
+    labs(title = title)
+  pRight <- ggplot(data = data, aes(x = data[, 2], fill = batch, 
+    linetype = trt)) + geom_density(size = density.lwd, 
+    alpha = 0.5) + coord_flip() + ylab("Density") + theme(axis.title.x = element_text(size = rel(x.axis.cex), face = "bold"), 
+    axis.title.y = element_blank(), axis.line = element_blank(), 
+    axis.text = element_blank(), axis.ticks = element_blank(), 
+    panel.background = element_blank(), legend.position = "none") + 
+    scale_fill_manual(values = color.set) + scale_x_continuous(limits = ylim.update)
+  if (is.null(batch) && is.null(trt)) {
+    legend <- grid.rect(gp = gpar(col = "white"))
+  }
+  else {
+    legend <- get_legend(pMain)
+  }
+  gridExtra::grid.arrange(pTop, legend, pMain + theme(legend.position = "none"), 
+    pRight, ncol = 2, nrow = 2, widths = c(6, 2), heights = c(2, 
+      6))
+}
+
+```
+
 ```{r rug plot}
-all_pca <- pca(t(brain_tpm_filt), ncomp = 3, scale = TRUE)
-saveRDS(all_pca, "../data/pca_brain.rds")
+pca_brain <- pca(t(brain_tpm_filt), ncomp = 3, scale = TRUE)
+saveRDS(pca_brain, "../data/pca_brain.rds")
 
 # making origin factor
 brain_meta_sub <- matrix(sample_brain_meta[,"origin"])
@@ -140,25 +210,25 @@ brain_fact_cohort <- factor(brain_meta_sub)
 # making visual
 ## by just origin type
 colorset <- rainbow(4)
-png("../plots/GBM_pca_origintype.png")
-Scatter_Density(object = all_pca, batch = brain_fact_origin, color.set = colorset, batch.legend.title = "Origin Type", legend.cex = 1.5, legend.title.cex = 1.6, title.cex = 1.6)
-dev.off() # NOTE: for some reason with png() the image quality is always bad, even when I scale up dimensions. Better off generating plot in R script then >  image
+png("../plots/GBM_pca_origintype.png", width = 2000, height = 1000)
+Scatter_Density_adj(object = pca_brain, batch = brain_fact_origin, color.set = colorset, batch.legend.title = "Origin Type", legend.cex = 4, legend.title.cex = 4.4, title.cex = 3.2, y.axis.cex = 5, x.axis.cex = 5, point.size = 5, axis.text.cex = 4)
+dev.off() 
 
 # by data source
 colorset <- rainbow(6)
-Scatter_Density(object = all_pca, batch = brain_fact_cohort, color.set = colorset, batch.legend.title = "Data Cohort")
-Scatter_Density(object = all_pca, batch = brain_fact_cohort, color.set = colorset, trt = brain_fact_origin, batch.legend.title = "Data Cohort", trt.legend.title = "Data Type")
+Scatter_Density(object = pca_brain, batch = brain_fact_cohort, color.set = colorset, batch.legend.title = "Data Cohort")
+Scatter_Density(object = pca_brain, batch = brain_fact_cohort, color.set = colorset, trt = brain_fact_origin, batch.legend.title = "Data Cohort", trt.legend.title = "Data Type")
 
 # I kinda want to see what the split in control tissue is led by
 brain_meta_sub <- matrix(sample_brain_meta$sex)
 rownames(brain_meta_sub) <- sample_brain_meta$rse_sampname
 brain_fact_sex <- factor(brain_meta_sub)
 
-Scatter_Density(object = all_pca, batch = brain_fact_sex, color.set = colorset, batch.legend.title = "Origin Type")
+Scatter_Density(object = pca_brain, batch = brain_fact_sex, color.set = colorset, batch.legend.title = "Origin Type")
 
 # clean env
 rm(brain_meta_sub, brain_fact_cohort, brain_fact_origin)
-#rm(all_pca)# be careful if you still need this, obj takes a while to generate
+#rm(pca_brain)# be careful if you still need this, obj takes a while to generate
 gc()
 ```
 
@@ -260,8 +330,12 @@ saveRDS(cbind(annotation_col, hm_rm), "../data/gbm_modelsandtissues_cor.rds")
 ann_colors <- list(Model = c('Cell Line' = "#ff9288", 'PDX' = "#01dae0"))
 
 ## hm time
-png("../plots/JUSTGBM_hm_brainsubs.png", width = 900, height = 1100)
-pheatmap(hm_rm, annotation_row = annotation_col, show_rownames = F, angle_col = 45, fontsize = 23, labels_col = c("GBM Tumor Tissue", "All Brain Tumor Tissue", "Brain Non-Disease Tissue"), color = colorRampPalette(c("yellow", "red"))(200), annotation_colors = ann_colors)
+ph <- pheatmap(hm_rm, annotation_row = annotation_col, show_rownames = F, angle_col = 45, fontsize = 43, labels_col = c("GBM Tumor", "All Brain Tumor", "Brain Non-Disease"), color = colorRampPalette(c("yellow", "red"))(200), annotation_colors = ann_colors)
+ph$gtable$grobs[[1]]$gp <- gpar(lwd = 4)
+ph$gtable$grobs[[2]]$gp <- gpar(lwd = 4)
+png("../plots/JUSTGBM_hm_brainsubs.png", width = 1800, height = 2200)
+grid.newpage()
+grid.draw(ph$gtable)
 dev.off()
 ```
 
@@ -438,14 +512,14 @@ source("../scripts/functions/geom_split_violin.R")
 ```
 
 ```{r plot}
-ggplot(cor_dismatch_cantis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Tumor Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Tumor Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15)) + ylim(0.7, 0.9) # to add significance later
+ggplot(cor_dismatch_cantis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "", y = "") + theme(axis.text.x = element_text(angle = 45, hjust=1, face = "bold")) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 18, face = "bold"), legend.title = element_text(size = 20, face = "bold"), axis.text = element_text(size = 18, face = "bold")) + ylim(0.7, 0.9) # to add significance and axis labels later
 ggsave(filename = "../plots/vio_braincltoeachtum.png", 
           width = 18, height = 7)
 
 range(cor_dismatch_cantis_long_cl$cor)
 range(cor_dismatch_cantis_long_pdx$cor)
 
-ggplot(cor_dismatch_contis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "Non-Disease Tissue Type", y = "Median Correlation of Each Brain-Derived Model to Non-Disease Tissue") + theme(axis.text.x = element_text(angle = 45, hjust=1)) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12.5), axis.text = element_text(size = 15)) + ylim(0.7, 0.9) # to add significance later
+ggplot(cor_dismatch_contis_long, aes(tissue, cor, fill = Model)) + geom_split_violin() + labs(x = "", y = "") + theme(axis.text.x = element_text(angle = 45, hjust=1, face = "bold")) + theme(text = element_text(face = "bold"), legend.text = element_text(size = 18, face = "bold"), legend.title = element_text(size = 20, face = "bold"), axis.text = element_text(size = 18, face = "bold")) + ylim(0.7, 0.9) # to add significance and axis labels later
 ggsave(filename = "../plots/vio_braincltoeachcon.png", 
           width = 18, height = 7)
 ```

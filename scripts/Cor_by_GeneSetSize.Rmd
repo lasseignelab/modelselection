@@ -57,13 +57,13 @@ for(i in c(100, 1000, 5000, 10000)){
     var <- i
     for(i in c("purinc", "purexc")){
        cor_temp <- readRDS(paste("../data/rse_subsets/", sub, "/", i, "/", var, "var/corres/", "cor_dismatch_", i, "_", var, "var_res_", sub, ".rds", sep = ""))[["dfo_summary"]]
-      percent_map_to_origin <- c(percent_map_to_origin, cor_temp$same_as_origin/(cor_temp$different + cor_temp$same_as_origin))
+      percent_map_to_origin <- c(percent_map_to_origin, cor_temp$same_as_origin/(cor_temp$different + cor_temp$same_as_origin) * 100)
       id <- c(id, paste(sub,var,i, sep = "_"))
     }
   }
 }
 cor_temp <- readRDS("../data/recount3/corres/cor_dismatch_res_allCL.rds")[["dfo_summary"]]
-percent_map_to_origin <- c(percent_map_to_origin, cor_temp$same_as_origin/(cor_temp$different + cor_temp$same_as_origin))
+percent_map_to_origin <- c(percent_map_to_origin, cor_temp$same_as_origin/(cor_temp$different + cor_temp$same_as_origin) * 100)
       id <- c(id, "all")
 
 View(cbind(id, percent_map_to_origin))
@@ -74,9 +74,9 @@ rm(i, id, sub, var, cor_temp)
 ```{r}
 corr_table <- data.frame(genes_included = factor(c(rep(100,4),rep(1000,4),rep(5000,4),rep(10000,4))), percent_map_to_origin = percent_map_to_origin[-17], Variation = rep(c("TCGA", "TCGA", "GTEx", "GTEx"),4), Purity = rep(c("Included", "Excluded"),8))
 
-ggplot(corr_table, aes(x = genes_included, y = percent_map_to_origin, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + geom_hline(yintercept=percent_map_to_origin[17], color="darkslategray") + labs(x = "Number of Genes Included", y = "% of Cell Lines That Correlate Highest to Origin Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13)) + scale_linetype_manual(values=c("dashed", "solid"))
+ggplot(corr_table, aes(x = genes_included, y = percent_map_to_origin, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + geom_hline(yintercept=percent_map_to_origin[17], color="darkslategray") + labs(x = "Number of Genes Included", y = "% Cell Lines Correlate Highest to Origin Tissue") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 13)) + scale_linetype_manual(values=c("dashed", "solid"))
 ggsave("../plots/percentmaptoorigin.png", units = "px", width = 2200, height = 1500)
-rm(percent_map_to_origin, corr_table)
+#rm(percent_map_to_origin, corr_table)
 ```
 
 # run function to make a bunch of objects including/excluding purity, of various gene set sizes (5K, 10K, full), and variation source as TCGA or GTEx
@@ -103,6 +103,8 @@ tissuecormatch_med_res <- data.frame(
 )
 
 colnames(tissuecormatch_med_res) <- c("oneH_I_T", "oneH_E_T", "oneH_I_G", "oneH_E_G", "oneK_I_T", "oneK_E_T", "oneK_I_G", "oneK_E_G", "fiveK_I_T", "fiveK_E_T", "fiveK_I_G", "fiveK_E_G", "tenK_I_T", "tenK_E_T", "tenK_I_G", "tenK_E_G", "ALL")
+
+saveRDS(tissuecormatch_med_res, "../data/rse_subsets/tissuecormatch_med_res")
 ```
 
 # summary line plot of median of each group size across all tissues
@@ -191,7 +193,7 @@ subset_table_lp[grep("inc", subset_table_lp$name),]$Purity <- "Included"
 subset_table_lp[grep("exc", subset_table_lp$name),]$Purity <- "Excluded"
 
 # plot
-ggplot(subset_table_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Their Origin Tissue") + geom_hline(aes(yintercept=subset_medians[17]), color="darkslategray") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 12), axis.text = element_text(size = 13)) + scale_linetype_manual(values=c("dashed", "solid"))
+ggplot(subset_table_lp, aes(x = gene_set_size, y = median_cor_across_tissues, color = Variation, linetype = Purity)) + geom_line(aes(group = interaction(Variation, Purity))) + geom_point() + labs(x = "Number of Genes Included", y = "Median Correlation of Cell Lines to Origin Tissue") + geom_hline(aes(yintercept=subset_medians[17]), color="darkslategray") + theme(text = element_text(face = "bold"), legend.text = element_text(size = 16), legend.title = element_text(size = 18), axis.title = element_text(size = 14), axis.text = element_text(size = 13)) + scale_linetype_manual(values=c("dashed", "solid"))
 
 ggsave("../plots/medcortoorigin_fromfullcor.png", units = "px", width = 2200, height = 1500) # this is used in final over other one
 ```
@@ -256,9 +258,15 @@ column_ha <- HeatmapAnnotation(df = as.data.frame(t(tissuecormatch_med_res_annor
                                col = list("Subset Size" = c("  100" = "#C86991", " 1000" = "#FEE440", " 5000" = "#328651", "10000" = "#00BBF9", "63856" = "#9B5DE5"),
                                           "Tumor Purity" = c("Included" = "#3C8EA9", "Excluded" = "#F15BB5"),
                                           "Variance" = c("TCGA" = "#00F5D4", "GTEx" = "#77267D", "All" = "#F5743D"))) # idk why the spaces are/need to be in sub size but they do
+fs <- 26 # for global fontsize edits
 
-png(file="../plots/genesetsize_hm_indcancers.png", width = 800, height = 600, pointsize = 14)
-hm_obj <- Heatmap(as.matrix(tissuecormatch_med_res), name = "Median Correlation", row_title = "Cancer Type", row_labels = substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), row_title_side = "right", column_labels = tissuecormatch_med_res_annorow[23,], top_annotation = column_ha, column_title = "Gene Subset Size", column_title_side = "top", column_names_side = "top", column_dend_side = "bottom", column_split = c(rep("", length(colnames(tissuecormatch_med_res))-1), 63856)) 
+png(file="../plots/genesetsize_hm_indcancers.png", width = 1600, height = 1200)
+hm_obj <- Heatmap(as.matrix(tissuecormatch_med_res), name = "Median Correlation", row_title = "Cancer Type", row_labels = substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), row_title_side = "right", column_labels = tissuecormatch_med_res_annorow[23,], top_annotation = column_ha, column_title = "Gene Subset Size", column_title_side = "top", column_names_side = "top", column_dend_side = "bottom", column_split = c(rep("", length(colnames(tissuecormatch_med_res))-1), 63856), row_title_gp = gpar(fontsize = fs, fontface = "bold"), column_title_gp = gpar(fontsize = fs, fontface = "bold"), row_names_gp = gpar(fontsize = fs, fontface = "bold"), column_names_gp = gpar(fontsize = fs, fontface = "bold"), heatmap_legend_param = list(legend_gp = gpar(fontsize = fs, fontface = "bold"), labels_gp = gpar(fontsize = fs, fontface = "bold"))) 
+draw(hm_obj)
+dev.off()
+
+png(file="../plots/genesetsize_hm_indcancers_leg.png", width = 400, height = 300)
+hm_obj <- Heatmap(as.matrix(tissuecormatch_med_res), name = "Median Correlation", row_title = "Cancer Type", row_labels = substr(rownames(tissuecormatch_med_res),1, nchar(rownames(tissuecormatch_med_res))-7), row_title_side = "right", column_labels = tissuecormatch_med_res_annorow[23,], top_annotation = column_ha, column_title = "Gene Subset Size", column_title_side = "top", column_names_side = "top", column_dend_side = "bottom", column_split = c(rep("", length(colnames(tissuecormatch_med_res))-1), 63856), row_title_gp = gpar(fontsize = fs, fontface = "bold"), column_title_gp = gpar(fontsize = fs, fontface = "bold"), row_names_gp = gpar(fontsize = fs, fontface = "bold"), column_names_gp = gpar(fontsize = fs, fontface = "bold")) 
 draw(hm_obj)
 dev.off()
 ```
