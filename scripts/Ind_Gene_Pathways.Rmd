@@ -551,9 +551,9 @@ for(i in c("cl_tumtis", "cl_ndtis", "pdx_tumtis", "pdx_ndtis")){
     
     title <- c("Cell Line vs Tumor Tissue", "Cell Line vs Non-Disease Tissue", "PDX vs Tumor Tissue", "PDX vs Non-Disease Tissue")
     indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]] <- stringr::str_trunc(indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]][["term_name"]], 30)
-    temp <- ggplot(indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("Pathway") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", title[which(c("cl_tumtis", "cl_ndtis", "pdx_tumtis", "pdx_ndtis") == comparison)])) + labs(color = "Correlation", size = "Recall") + theme_bw() + theme(text = element_text(size=20, face = "bold"), axis.text.y = element_text(size = 20), legend.text = element_text(size = 22), legend.title = element_text(size = 25), axis.title = element_text(size = 25), title = element_text(size = 20)) + scale_size(range = c(5,10)) + guides(colour = guide_legend(override.aes = list(size=10)))
+    temp <- ggplot(indgene_cor_pathway_res_sub_dfs_posneg[[comparison]][[i]], aes(x=reorder(term_name, neg_log10p), y=neg_log10p, color= posneg)) + geom_point(aes(size = recall)) + coord_flip() + xlab("Pathway") + ylab("-log10p") + ggtitle(paste("Pathway Enrichment for", title[which(c("cl_tumtis", "cl_ndtis", "pdx_tumtis", "pdx_ndtis") == comparison)])) + labs(color = "Correlation", size = "Recall") + theme_bw() + theme(text = element_text(size=8, face = "bold"), axis.text.y = element_text(size = 8, face = "bold"), legend.text = element_text(size = 9, face = "bold"), legend.title = element_text(size = 10, face = "bold"), axis.title = element_text(size = 10, face = "bold"), title = element_text(size = 8, face = "bold")) + scale_size(range = c(0.5,3)) + guides(colour = guide_legend(override.aes = list(size=3)))
     
-    ggexport(temp, filename = paste("../plots/ind_gene/dotplot/final/", comparison, "_", i, ".png", sep = ""), width = 1100, height = 700)
+    ggexport(temp, filename = paste("../plots/ind_gene/dotplot/final/", comparison, "_", i, ".png", sep = ""), width = 3000, height = 1800, res = 600)
   }
 }
 ```
